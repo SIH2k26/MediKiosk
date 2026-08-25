@@ -30,13 +30,21 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     const token = authHeader.slice(7);
     const supabase = createSupabaseServerClient();
     const { data: { user }, error } = await supabase.auth.getUser(token);
-
     if (error || !user) {
       return next(createUnauthorizedError());
     }
 
-    (req as AuthRequest).userId = user.id;
-    (req as AuthRequest).userRole = (user.user_metadata?.role as UserRole) ?? 'PATIENT';
+    const authReq = req as AuthRequest;
+    authReq.userId = user.id;
+
+    // Retrieve role from database profiles table (RLS allows select for own user_id)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+
+    authReq.userRole = (profile?.role as UserRole) ?? 'PATIENT';
 
     next();
   } catch (err) {
