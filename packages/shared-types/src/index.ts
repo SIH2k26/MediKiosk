@@ -1,0 +1,583 @@
+// =============================================================================
+// MediKiosk Shared Types
+// =============================================================================
+// Canonical TypeScript interfaces used across all apps and services.
+// These types define the clinical data model for the entire platform.
+// =============================================================================
+
+// ---------------------------------------------------------------------------
+// Enumerations
+// ---------------------------------------------------------------------------
+
+export type UserRole = 'PATIENT' | 'DOCTOR' | 'TRIAGE_STAFF' | 'ADMIN';
+
+export type RiskLevel = 'NORMAL' | 'WARNING' | 'HIGH_PRIORITY' | 'EMERGENCY';
+
+export type Language = 'en' | 'hi' | 'ta' | 'te' | 'bn' | 'mr' | 'gu' | 'kn' | 'ml' | 'pa';
+
+export type DocumentType =
+  | 'PRESCRIPTION'
+  | 'LAB_REPORT'
+  | 'DISCHARGE_SUMMARY'
+  | 'IMAGING_REPORT'
+  | 'PROCEDURE_RECORD'
+  | 'OTHER';
+
+export type DocumentStatus =
+  | 'UPLOADED'
+  | 'PROCESSING'
+  | 'PROCESSED'
+  | 'FAILED'
+  | 'REQUIRES_REVIEW';
+
+export type ConsentStatus = 'PENDING' | 'GRANTED' | 'REVOKED';
+
+export type SessionStatus = 'ACTIVE' | 'COMPLETED' | 'ABANDONED' | 'EXPIRED';
+
+export type SummaryStatus = 'GENERATING' | 'READY' | 'DOCTOR_REVIEWING' | 'CONFIRMED' | 'REJECTED';
+
+export type ReviewAction = 'ACCEPT' | 'MODIFY' | 'REJECT';
+
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+
+export type AYUSHSystem = 'AYURVEDA' | 'YOGA' | 'UNANI' | 'SIDDHA' | 'HOMEOPATHY';
+
+// ---------------------------------------------------------------------------
+// User & Authentication
+// ---------------------------------------------------------------------------
+
+export interface Profile {
+  id: string;
+  userId: string;
+  role: UserRole;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Patient
+// ---------------------------------------------------------------------------
+
+export interface Patient {
+  id: string;
+  profileId?: string;
+  abhaId?: string;            // Ayushman Bharat Health Account ID
+  uhid?: string;              // Unique Hospital ID
+  firstName: string;
+  lastName: string;
+  dateOfBirth?: string;       // ISO date string
+  age?: number;
+  gender?: Gender;
+  phone?: string;
+  email?: string;
+  address?: PatientAddress;
+  preferredLanguage: Language;
+  isAnonymous: boolean;       // Kiosk walk-in without registration
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PatientAddress {
+  line1?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  country?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Session
+// ---------------------------------------------------------------------------
+
+export interface PatientSession {
+  id: string;
+  patientId: string;
+  kioskId?: string;
+  status: SessionStatus;
+  language: Language;
+  startedAt: string;
+  completedAt?: string;
+  expiresAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+// ---------------------------------------------------------------------------
+// Consent
+// ---------------------------------------------------------------------------
+
+export interface Consent {
+  id: string;
+  patientId: string;
+  sessionId: string;
+  status: ConsentStatus;
+  consentVersion: string;     // Version of consent document agreed to
+  grantedAt?: string;
+  revokedAt?: string;
+  ipAddress?: string;
+  audioConfirmationUrl?: string; // Supabase Storage URL
+}
+
+// ---------------------------------------------------------------------------
+// Clinical History — Core Types
+// ---------------------------------------------------------------------------
+
+export interface ClinicalHistory {
+  id: string;
+  patientId: string;
+  sessionId: string;
+  chiefComplaint: ChiefComplaint[];
+  hpi: HPI;
+  pastMedicalHistory: MedicalCondition[];
+  pastSurgicalHistory: Surgery[];
+  medications: Medication[];
+  allergies: Allergy[];
+  familyHistory: FamilyHistory;
+  personalHistory: PersonalHistory;
+  reviewOfSystems: ReviewOfSystems;
+  investigations: Investigation[];
+  ayushAssessment?: AYUSHAssessment;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChiefComplaint {
+  complaint: string;
+  duration?: string;
+  severity?: number;          // 1–10 scale
+  onset?: string;
+}
+
+export interface HPI {
+  onset?: string;
+  duration?: string;
+  character?: string;
+  location?: string;
+  radiation?: string;
+  severity?: number;          // 1–10 scale
+  aggravatingFactors?: string[];
+  relievingFactors?: string[];
+  associatedSymptoms?: string[];
+  timeline?: string;
+  context?: string;
+  narrative?: string;         // Free-text narrative generated by AI
+}
+
+export interface MedicalCondition {
+  condition: string;
+  diagnosedYear?: number;
+  status?: 'ACTIVE' | 'RESOLVED' | 'CHRONIC';
+  notes?: string;
+  sourceDocumentId?: string;  // Traceable to source
+}
+
+export interface Surgery {
+  procedure: string;
+  year?: number;
+  hospital?: string;
+  notes?: string;
+  sourceDocumentId?: string;
+}
+
+export interface Medication {
+  name: string;
+  genericName?: string;
+  dose?: string;
+  frequency?: string;
+  route?: string;
+  startDate?: string;
+  endDate?: string;
+  prescribedBy?: string;
+  isCurrentlyTaking: boolean;
+  sourceDocumentId?: string;
+}
+
+export interface Allergy {
+  substance: string;
+  type?: 'DRUG' | 'FOOD' | 'ENVIRONMENTAL' | 'OTHER';
+  reaction?: string;
+  severity?: 'MILD' | 'MODERATE' | 'SEVERE' | 'ANAPHYLAXIS';
+  sourceDocumentId?: string;
+}
+
+export interface FamilyHistory {
+  father?: string[];          // List of conditions
+  mother?: string[];
+  siblings?: string[];
+  children?: string[];
+  other?: string;
+}
+
+export interface PersonalHistory {
+  smoking?: SmokingHistory;
+  alcohol?: AlcoholHistory;
+  tobaccoChewing?: boolean;
+  diet?: 'VEGETARIAN' | 'NON_VEGETARIAN' | 'VEGAN' | 'EGGETARIAN';
+  occupation?: string;
+  maritalStatus?: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED';
+  exercise?: 'SEDENTARY' | 'LIGHT' | 'MODERATE' | 'ACTIVE';
+}
+
+export interface SmokingHistory {
+  status: 'NEVER' | 'FORMER' | 'CURRENT';
+  packsPerDay?: number;
+  yearsSmoked?: number;
+  quitYear?: number;
+}
+
+export interface AlcoholHistory {
+  status: 'NEVER' | 'FORMER' | 'CURRENT';
+  frequency?: string;
+  amount?: string;
+}
+
+export interface ReviewOfSystems {
+  cardiovascular?: string[];
+  respiratory?: string[];
+  gastrointestinal?: string[];
+  genitourinary?: string[];
+  neurological?: string[];
+  musculoskeletal?: string[];
+  dermatological?: string[];
+  ophthalmological?: string[];
+  ent?: string[];             // Ear, nose, throat
+  endocrine?: string[];
+  psychiatric?: string[];
+  other?: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Investigations (Lab Results)
+// ---------------------------------------------------------------------------
+
+export interface Investigation {
+  id: string;
+  patientId: string;
+  name: string;
+  value?: string | number;
+  unit?: string;
+  referenceRange?: ReferenceRange;
+  status?: 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL' | 'UNKNOWN';
+  testDate?: string;
+  laboratory?: string;
+  isAbnormal?: boolean;
+  notes?: string;
+  sourceDocumentId?: string;
+  extractedByAI: boolean;
+  confidence?: number;        // AI extraction confidence 0–1
+}
+
+export interface ReferenceRange {
+  low?: number;
+  high?: number;
+  unit?: string;
+  ageRange?: string;
+  genderSpecific?: Gender;
+}
+
+// ---------------------------------------------------------------------------
+// Documents
+// ---------------------------------------------------------------------------
+
+export interface MedicalDocument {
+  id: string;
+  patientId: string;
+  sessionId: string;
+  type: DocumentType;
+  status: DocumentStatus;
+  originalFileName: string;
+  storageUrl: string;         // Supabase Storage URL
+  mimeType: string;
+  fileSizeBytes: number;
+  pageCount?: number;
+  uploadedAt: string;
+  processedAt?: string;
+  ocrText?: string;
+  extractedEntities?: ExtractedEntity[];
+  confidence?: number;
+}
+
+export interface ExtractedEntity {
+  id: string;
+  documentId: string;
+  pageNumber?: number;
+  entityType:
+    | 'MEDICATION'
+    | 'INVESTIGATION'
+    | 'DIAGNOSIS'
+    | 'SURGERY'
+    | 'ALLERGY'
+    | 'DATE'
+    | 'DOCTOR'
+    | 'HOSPITAL'
+    | 'OTHER';
+  value: string;
+  normalizedValue?: string;
+  confidence: number;
+  boundingBox?: BoundingBox;
+  metadata?: Record<string, unknown>;
+}
+
+export interface BoundingBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+// ---------------------------------------------------------------------------
+// Medical Timeline
+// ---------------------------------------------------------------------------
+
+export interface TimelineEvent {
+  id: string;
+  patientId: string;
+  eventDate?: string;         // ISO date or year
+  eventYear?: number;
+  eventType:
+    | 'DIAGNOSIS'
+    | 'SURGERY'
+    | 'MEDICATION_START'
+    | 'MEDICATION_STOP'
+    | 'INVESTIGATION'
+    | 'HOSPITALIZATION'
+    | 'CONSULTATION'
+    | 'OTHER';
+  title: string;
+  description?: string;
+  sourceDocumentId?: string;
+  sourceAnswerId?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Clinical Summary
+// ---------------------------------------------------------------------------
+
+export interface ClinicalSummary {
+  id: string;
+  patientId: string;
+  sessionId: string;
+  status: SummaryStatus;
+  riskLevel: RiskLevel;
+  redFlags: RedFlag[];
+
+  // Structured summary sections
+  chiefComplaintSummary: string;
+  hpiNarrative: string;
+  pastHistorySummary: string;
+  medicationSummary: string;
+  allergySummary: string;
+  investigationSummary: string;
+  timelineSummary: string;
+  systemsReview?: string;
+
+  // Full structured data
+  history: ClinicalHistory;
+  timeline: TimelineEvent[];
+
+  // AI metadata
+  aiModel?: string;
+  generationPromptVersion?: string;
+  generatedAt: string;
+  confidenceScore?: number;   // 0–1
+
+  // Doctor review
+  doctorReview?: DoctorReview;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RedFlag {
+  type: string;
+  description: string;
+  severity: RiskLevel;
+  triggeredBy: string[];      // Symptom IDs or entity IDs
+  requiresImmediateAttention: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Doctor Review
+// ---------------------------------------------------------------------------
+
+export interface DoctorReview {
+  id: string;
+  summaryId: string;
+  doctorId: string;
+  action: ReviewAction;
+
+  // Original AI output preserved for audit
+  originalSummary: string;
+
+  // Doctor modifications
+  modifications?: SummaryModification[];
+  finalNotes?: string;
+
+  confirmedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SummaryModification {
+  field: string;
+  originalValue: unknown;
+  modifiedValue: unknown;
+  reason?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Triage
+// ---------------------------------------------------------------------------
+
+export interface TriageAlert {
+  id: string;
+  patientId: string;
+  sessionId: string;
+  riskLevel: RiskLevel;
+  redFlags: RedFlag[];
+  isAcknowledged: boolean;
+  acknowledgedBy?: string;    // Staff profile ID
+  acknowledgedAt?: string;
+  createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Audit Logging
+// ---------------------------------------------------------------------------
+
+export interface AuditLog {
+  id: string;
+  actorId?: string;           // User/system performing the action
+  actorRole?: UserRole;
+  patientId?: string;
+  action: string;             // e.g., 'CONSENT_GRANTED', 'DOCUMENT_UPLOADED'
+  resourceType?: string;
+  resourceId?: string;
+  details?: Record<string, unknown>;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// AYUSH Assessment (Dashavidha Pariksha)
+// ---------------------------------------------------------------------------
+
+export interface AYUSHAssessment {
+  system: AYUSHSystem;
+
+  // Dashavidha Pariksha (Ten-fold examination in Ayurveda)
+  prakriti?: string;          // Constitution
+  vikriti?: string;           // Current imbalance
+  sara?: string;              // Tissue excellence
+  samhanana?: string;         // Compactness of body
+  pramana?: string;           // Measurement/physique
+  satmya?: string;            // Adaptability/wholesomeness
+  sattva?: string;            // Mental strength
+  aharaShakti?: string;       // Digestive power
+  vyayamaShakti?: string;     // Exercise capacity
+  vaya?: string;              // Age assessment
+
+  // Lifestyle (Ahara-Vihara)
+  dietaryHabits?: string;
+  dailyRoutine?: string;
+  sleepPattern?: string;
+  stressLevel?: string;
+
+  notes?: string;
+}
+
+// ---------------------------------------------------------------------------
+// API Response Shapes
+// ---------------------------------------------------------------------------
+
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: ApiError;
+  meta?: ResponseMeta;
+}
+
+export interface ApiError {
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+export interface ResponseMeta {
+  page?: number;
+  pageSize?: number;
+  total?: number;
+  totalPages?: number;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  meta: Required<ResponseMeta>;
+}
+
+// ---------------------------------------------------------------------------
+// History Session / Dialogue
+// ---------------------------------------------------------------------------
+
+export interface HistorySection {
+  id: string;
+  historyId: string;
+  sectionType: HistorySectionType;
+  isComplete: boolean;
+  answers: HistoryAnswer[];
+  completedAt?: string;
+}
+
+export type HistorySectionType =
+  | 'CHIEF_COMPLAINT'
+  | 'HPI'
+  | 'PAST_MEDICAL_HISTORY'
+  | 'PAST_SURGICAL_HISTORY'
+  | 'MEDICATIONS'
+  | 'ALLERGIES'
+  | 'FAMILY_HISTORY'
+  | 'PERSONAL_HISTORY'
+  | 'REVIEW_OF_SYSTEMS'
+  | 'AYUSH';
+
+export interface HistoryAnswer {
+  id: string;
+  sectionId: string;
+  questionId: string;
+  questionText: string;
+  answerType: 'VOICE' | 'TOUCH' | 'TEXT';
+  rawAnswer: string;           // Original voice transcript or touch selection
+  processedAnswer?: string;    // After NLP processing
+  audioUrl?: string;           // Supabase Storage URL for voice recording
+  confidence?: number;
+  timestamp: string;
+}
+
+// ---------------------------------------------------------------------------
+// Dialogue / Question Types
+// ---------------------------------------------------------------------------
+
+export interface ClinicalQuestion {
+  id: string;
+  text: string;
+  hindiText?: string;
+  sectionType: HistorySectionType;
+  inputType: 'VOICE_OR_TOUCH' | 'VOICE_ONLY' | 'TOUCH_ONLY' | 'TEXT';
+  options?: QuestionOption[];
+  isRequired: boolean;
+  followUpCondition?: string;  // Condition for adaptive follow-up
+  redFlagTriggers?: string[];
+}
+
+export interface QuestionOption {
+  id: string;
+  label: string;
+  hindiLabel?: string;
+  value: string;
+  emoji?: string;
+}
