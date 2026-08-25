@@ -1,3 +1,4 @@
+import { supabase } from './supabase';
 import { CreatePatient, CreateConsent } from '@medikiosk/clinical-schema';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
@@ -7,12 +8,22 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4
  */
 async function fetchJson<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
+  
+  // Attach Supabase access token (JWT) if user is authenticated
+  const { data: { session } } = await supabase.auth.getSession();
+  const headers = new Headers(options.headers);
+  
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  if (session?.access_token) {
+    headers.set('Authorization', `Bearer ${session.access_token}`);
+  }
+
   const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
     ...options,
+    headers,
   });
 
   const result = await response.json();

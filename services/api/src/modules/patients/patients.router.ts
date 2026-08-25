@@ -9,6 +9,7 @@ export const patientsRouter = Router();
 // DB Mapping Helper Functions
 function mapToSnakeCase(patient: any) {
   return {
+    profile_id: patient.profileId,
     first_name: patient.firstName,
     last_name: patient.lastName,
     date_of_birth: patient.dateOfBirth,
@@ -44,6 +45,17 @@ function mapToCamelCase(row: any) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+// Local helper to optionally check bearer tokens without throwing
+async function getAuthUser(req: Request): Promise<any | null> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) return null;
+
+  const token = authHeader.slice(7);
+  const supabase = createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser(token);
+  return user || null;
 }
 
 /**
@@ -87,24 +99,64 @@ patientsRouter.get(
 /**
  * POST /api/patients
  * Register a new patient (kiosk walk-in or ABHA-linked).
- * Safe for unauthenticated kiosk usage.
+ * Safe for unauthenticated kiosk usage, or optionally authenticated.
  */
 patientsRouter.post('/', async (req: Request, res: Response, next) => {
   try {
     const validatedData = CreatePatientSchema.parse(req.body);
-    const supabase = createSupabaseServiceClient(); // Use service role client to bypass RLS for registration
+    const serviceClient = createSupabaseServiceClient(); // Service role client to write profiles/patients
 
+    // 1. Check if user is authenticated (registered/logged in via Supabase Auth)
+    const authUser = await getAuthUser(req);
+    let profileId: string | undefined = undefined;
+
+    if (authUser) {
+      // Create or get profile for the authenticated user
+      const { data: profile } = await serviceClient
+        .from('profiles')
+        .select('id')
+        .eq('user_id', authUser.id)
+        .maybeSingle();
+
+      if (profile) {
+        profileId = profile.id;
+      } else {
+        const { data: newProfile, error: insertError } = await serviceClient
+          .from('profiles')
+          .insert({
+            user_id: authUser.id,
+            role: 'PATIENT',
+            full_name: `${validatedData.firstName} ${validatedData.lastName}`,
+            email: authUser.email,
+            phone: validatedData.phone,
+          })
+          .select('id')
+          .single();
+
+        if (insertError) return next(insertError);
+        profileId = newProfile.id;
+      }
+    }
+
+    // 2. Check if patient record already exists
     let existingPatient = null;
 
-    if (validatedData.abhaId) {
-      const { data } = await supabase
+    if (profileId) {
+      const { data } = await serviceClient
+        .from('patients')
+        .select('*')
+        .eq('profile_id', profileId)
+        .maybeSingle();
+      existingPatient = data;
+    } else if (validatedData.abhaId) {
+      const { data } = await serviceClient
         .from('patients')
         .select('*')
         .eq('abha_id', validatedData.abhaId)
         .maybeSingle();
       existingPatient = data;
     } else if (validatedData.phone && !validatedData.isAnonymous) {
-      const { data } = await supabase
+      const { data } = await serviceClient
         .from('patients')
         .select('*')
         .eq('phone', validatedData.phone)
@@ -113,16 +165,67 @@ patientsRouter.post('/', async (req: Request, res: Response, next) => {
       existingPatient = data;
     }
 
+    // 3. Handle matching/updating existing patients
     if (existingPatient) {
+      const isPlaceholder =
+        existingPatient.first_name === 'Walk-in' ||
+        existingPatient.first_name === 'आगंतुक' ||
+        existingPatient.first_name === 'Kiosk' ||
+        existingPatient.first_name === 'कियोस्क';
+
+      const incomingIsReal =
+        validatedData.firstName !== 'Walk-in' &&
+        validatedData.firstName !== 'आगंतुक' &&
+        validatedData.firstName !== 'Kiosk' &&
+        validatedData.firstName !== 'कियोस्क';
+
+      const updatePayload = mapToSnakeCase(validatedData);
+      if (profileId) {
+        updatePayload.profile_id = profileId;
+      }
+
+      if (isPlaceholder && incomingIsReal) {
+        const { data: updatedPatient, error: updateError } = await serviceClient
+          .from('patients')
+          .update(updatePayload)
+          .eq('id', existingPatient.id)
+          .select('*')
+          .single();
+
+        if (updateError) return next(updateError);
+
+        return res.status(200).json({
+          success: true,
+          data: mapToCamelCase(updatedPatient),
+        });
+      }
+
+      // Link profile if newly authenticated
+      if (profileId && !existingPatient.profile_id) {
+        const { data: updatedPatient } = await serviceClient
+          .from('patients')
+          .update({ profile_id: profileId })
+          .eq('id', existingPatient.id)
+          .select('*')
+          .single();
+        existingPatient = updatedPatient;
+      }
+
       return res.status(200).json({
         success: true,
         data: mapToCamelCase(existingPatient),
       });
     }
 
-    const { data: newPatient, error } = await supabase
+    // 4. Create new patient record
+    const insertPayload = mapToSnakeCase(validatedData);
+    if (profileId) {
+      insertPayload.profile_id = profileId;
+    }
+
+    const { data: newPatient, error } = await serviceClient
       .from('patients')
-      .insert(mapToSnakeCase(validatedData))
+      .insert(insertPayload)
       .select('*')
       .single();
 
