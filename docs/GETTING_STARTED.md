@@ -25,23 +25,24 @@ pnpm install
 
 ## 2. Configure Environment
 
-Copy `.env.example` files and fill in your values:
+Copy the root `.env.example` file to each service directory:
 
 ```bash
-# Kiosk app
-copy apps\kiosk\.env.local.example apps\kiosk\.env.local
+# Windows
+copy .env.example apps\kiosk\.env.local
+copy .env.example apps\doctor\.env.local
+copy .env.example apps\admin\.env.local
+copy .env.example services\api\.env
+copy .env.example services\ai-history\.env
+copy .env.example services\ai-documents\.env
 
-# Doctor app
-copy apps\doctor\.env.local.example apps\doctor\.env.local
-
-# Express API
-copy services\api\.env.example services\api\.env
-
-# AI History service
-copy services\ai-history\.env.example services\ai-history\.env
-
-# AI Documents service
-copy services\ai-documents\.env.example services\ai-documents\.env
+# macOS / Linux
+cp .env.example apps/kiosk/.env.local
+cp .env.example apps/doctor/.env.local
+cp .env.example apps/admin/.env.local
+cp .env.example services/api/.env
+cp .env.example services/ai-history/.env
+cp .env.example services/ai-documents/.env
 ```
 
 You **must** fill in:
