@@ -1,0 +1,15 @@
+/* MediKiosk Admin Portal — Global Styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --color-surface: #0F1117;
+  --color-surface-2: #1A1D27;
+  --color-border: rgba(255,255,255,0.08);
+  --color-primary: #1A73E8;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: rgba(255,255,255,0.72);
+  --color-text-muted: rgba(255,255,255,0.45);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); background: var(--color-surface); color: var(--color-text-primary); min-height: 100vh; -webkit-font-smoothing: antialiased; }
