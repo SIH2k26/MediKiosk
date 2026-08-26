@@ -31,6 +31,7 @@ class OCRResult:
     text: str
     confidence: float
     page_count: int
+    page_texts: list[str]  # per-page text, needed for source traceability (feature 25)
 
 
 class OCRPipeline:
@@ -67,6 +68,7 @@ class OCRPipeline:
             text=combined_text,
             confidence=round(avg_confidence, 3),
             page_count=len(pages),
+            page_texts=all_text,
         )
 
     def _bytes_to_images(self, image_bytes: bytes, mime_type: str) -> list[np.ndarray]:

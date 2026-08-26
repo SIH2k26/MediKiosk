@@ -76,10 +76,8 @@ class EntityExtractor:
                 prompt,
                 generation_config={"response_mime_type": "application/json"},
             )
-            print("RAW GEMINI RESPONSE:", response.text)
             raw = json.loads(response.text)
         except Exception as e:
-            print("GEMINI ERROR:", e)
             logger.error(f"Gemini extraction failed: {e}")
             return {"entities": [], "medications": [], "investigations": [], "allergies": []}
 
@@ -88,6 +86,36 @@ class EntityExtractor:
             "medications": self._safe_parse_list(raw.get("medications", []), ExtractedMedication),
             "investigations": self._safe_parse_list(raw.get("investigations", []), ExtractedInvestigation),
             "allergies": self._safe_parse_list(raw.get("allergies", []), ExtractedAllergy),
+        }
+
+    def extract_with_traceability(self, page_texts: list[str], language: str = "hi") -> dict:
+        """
+        Run extraction per-page instead of on combined text, so each ExtractedEntity
+        can be stamped with the page_number it actually came from (feature 25).
+
+        Note: ExtractedMedication/ExtractedInvestigation/ExtractedAllergy don't have
+        a page_number field in the current schema, so those lists are merged across
+        pages without page attribution. Add page_number to those models if per-page
+        traceability is needed for meds/investigations/allergies too.
+        """
+        all_entities, all_medications, all_investigations, all_allergies = [], [], [], []
+
+        for page_number, page_text in enumerate(page_texts, start=1):
+            result = self.extract(page_text, language)
+
+            for entity in result["entities"]:
+                entity.page_number = page_number
+            all_entities.extend(result["entities"])
+
+            all_medications.extend(result["medications"])
+            all_investigations.extend(result["investigations"])
+            all_allergies.extend(result["allergies"])
+
+        return {
+            "entities": all_entities,
+            "medications": all_medications,
+            "investigations": all_investigations,
+            "allergies": all_allergies,
         }
 
     def _safe_parse_list(self, items: list, model_cls) -> list:
