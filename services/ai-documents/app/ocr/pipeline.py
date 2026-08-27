@@ -15,6 +15,13 @@ from sarvamai.core.api_error import ApiError
 
 from app.config import settings
 
+import re
+
+def clean_ocr_text(text: str) -> str:
+    text = re.sub(r"!\[Image\]\(data:image/[^)]+\)", "", text)
+    text = re.sub(r"\*The image displays.*?\*", "", text, flags=re.DOTALL)
+    return text.strip()
+
 # Map our internal language codes to Sarvam's language codes (needs -IN suffix)
 SARVAM_LANG_MAP = {
     "en": "en-IN",
@@ -120,4 +127,4 @@ class OCRPipeline:
             if not md_files:
                 raise RuntimeError(f"No .md output found in Sarvam result zip: {z.namelist()}")
             with z.open(md_files[0]) as f:
-                return f.read().decode("utf-8")
+                return clean_ocr_text(f.read().decode("utf-8"))
