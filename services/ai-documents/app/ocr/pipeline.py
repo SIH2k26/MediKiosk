@@ -1,29 +1,44 @@
 """
-OCR Pipeline — Image preprocessing + text extraction.
-Phase 4: Full implementation with Tesseract + Gemini Vision.
+OCR Pipeline — Sarvam AI Document Intelligence (Digitise) for text extraction.
+Replaces the earlier Tesseract-based pipeline: Sarvam is purpose-built for
+Indian languages and performs significantly better on handwritten / messy
+printed medical documents, especially Hindi and other Indic scripts.
 """
 import io
+import time
+import zipfile
 from dataclasses import dataclass
 
-import cv2
-import numpy as np
-import pytesseract
-from PIL import Image
-from pdf2image import convert_from_bytes
+import httpx
+from sarvamai import SarvamAI
+from sarvamai.core.api_error import ApiError
 
-# Map our language codes to tesseract language codes
-TESS_LANG_MAP = {
-    "en": "eng",
-    "hi": "hin",
-    "ta": "tam",
-    "te": "tel",
-    "bn": "ben",
-    "mr": "mar",
-    "gu": "guj",
-    "kn": "kan",
-    "ml": "mal",
-    "pa": "pan",
+from app.config import settings
+
+# Map our internal language codes to Sarvam's language codes (needs -IN suffix)
+SARVAM_LANG_MAP = {
+    "en": "en-IN",
+    "hi": "hi-IN",
+    "ta": "ta-IN",
+    "te": "te-IN",
+    "bn": "bn-IN",
+    "mr": "mr-IN",
+    "gu": "gu-IN",
+    "kn": "kn-IN",
+    "ml": "ml-IN",
+    "pa": "pa-IN",
 }
+
+MIME_TO_FILENAME = {
+    "application/pdf": ("document.pdf", "application/pdf"),
+    "image/jpeg": ("document.jpg", "image/jpeg"),
+    "image/png": ("document.png", "image/png"),
+    "image/webp": ("document.webp", "image/webp"),
+}
+
+TERMINAL_STATES = {"completed", "partially_completed", "failed", "rejected"}
+POLL_INTERVAL_SECONDS = 3
+POLL_TIMEOUT_SECONDS = 120
 
 
 @dataclass
@@ -36,108 +51,73 @@ class OCRResult:
 
 class OCRPipeline:
     """
-    Document OCR pipeline.
+    Runs documents through Sarvam AI's Digitise API for OCR.
 
-    Processing steps:
-    1. Deskew
-    2. Denoise
-    3. Contrast enhancement
-    4. Layout detection (skipped for now — simple full-page OCR)
-    5. OCR (Tesseract for printed, Gemini Vision fallback for handwritten — added later)
-
-    Supports: English, Hindi, and other Indian languages.
+    NOTE on page_texts: Sarvam's Digitise returns one combined markdown file
+    per job. For single-page documents (the common case for prescriptions)
+    this is exactly right — page_texts=[full_text]. For multi-page PDFs,
+    we currently treat the whole document as one "page" of text for
+    downstream processing; splitting truly per-page would require parsing
+    the per-page metadata JSON files in the output zip, which needs
+    verifying against real multi-page output before relying on it.
     """
 
+    def __init__(self):
+        self.client = SarvamAI(api_subscription_key=settings.sarvam_api_key)
+
     def process(self, image_bytes: bytes, mime_type: str, language: str = "hi") -> OCRResult:
-        pages = self._bytes_to_images(image_bytes, mime_type)
+        sarvam_lang = SARVAM_LANG_MAP.get(language, "en-IN")
+        filename, content_type = MIME_TO_FILENAME.get(mime_type, ("document.jpg", "image/jpeg"))
 
-        tess_lang = TESS_LANG_MAP.get(language, "eng")
-        all_text = []
-        all_confidences = []
+        try:
+            job = self.client.doc_ai.digitise(
+                file=[(filename, io.BytesIO(image_bytes), content_type)],
+                language=sarvam_lang,
+                output_format="md",
+            )
+        except ApiError as e:
+            raise RuntimeError(f"Sarvam digitise job failed to start: {e.status_code} {e.body}")
 
-        for page_img in pages:
-            processed = self._preprocess(page_img)
-            text, conf = self._run_tesseract(processed, tess_lang)
-            all_text.append(text)
-            all_confidences.append(conf)
+        status = self._poll_until_terminal(job.job_id)
 
-        combined_text = "\n\n".join(all_text)
-        avg_confidence = sum(all_confidences) / len(all_confidences) if all_confidences else 0.0
+        if status.status.lower() == "rejected":
+            raise RuntimeError(f"Sarvam job rejected: {status}")
+        if status.status.lower() == "failed":
+            raise RuntimeError(f"Sarvam job failed: {status}")
+
+        text = self._download_and_extract_text(job.job_id)
+
+        pages_total = status.usage.pages_total or 1
+        pages_succeeded = status.usage.pages_succeeded or 0
+        # Proxy for confidence: Sarvam doesn't return a numeric OCR confidence,
+        # so we approximate using the ratio of successfully processed pages.
+        confidence = round(pages_succeeded / pages_total, 3) if pages_total else 0.0
 
         return OCRResult(
-            text=combined_text,
-            confidence=round(avg_confidence, 3),
-            page_count=len(pages),
-            page_texts=all_text,
+            text=text,
+            confidence=confidence,
+            page_count=pages_total,
+            page_texts=[text],  # see NOTE above re: multi-page splitting
         )
 
-    def _bytes_to_images(self, image_bytes: bytes, mime_type: str) -> list[np.ndarray]:
-        """Convert input bytes (PDF or image) into a list of OpenCV BGR images, one per page."""
-        if mime_type == "application/pdf":
-            pil_pages = convert_from_bytes(image_bytes, dpi=300)
-            return [cv2.cvtColor(np.array(p), cv2.COLOR_RGB2BGR) for p in pil_pages]
-        else:
-            pil_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-            return [cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)]
+    def _poll_until_terminal(self, job_id: str):
+        start = time.time()
+        while True:
+            status = self.client.doc_ai.get_status(job_id=job_id)
+            if status.status.lower() in TERMINAL_STATES:
+                return status
+            if time.time() - start > POLL_TIMEOUT_SECONDS:
+                raise TimeoutError(f"Sarvam job {job_id} did not finish within {POLL_TIMEOUT_SECONDS}s")
+            time.sleep(POLL_INTERVAL_SECONDS)
 
-    def _preprocess(self, img: np.ndarray) -> np.ndarray:
-        """Deskew, denoise, enhance contrast, threshold."""
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    def _download_and_extract_text(self, job_id: str) -> str:
+        download = self.client.doc_ai.get_download_url(job_id=job_id)
+        response = httpx.get(download.url, timeout=30.0)
+        response.raise_for_status()
 
-        # Denoise
-        denoised = cv2.fastNlMeansDenoising(gray, h=10)
-
-        # Contrast enhancement (CLAHE)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        enhanced = clahe.apply(denoised)
-
-        # Deskew
-        deskewed = self._deskew(enhanced)
-
-        # Adaptive threshold for clean binarized text
-        thresholded = cv2.adaptiveThreshold(
-            deskewed, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 15
-        )
-        return thresholded
-
-    def _deskew(self, gray: np.ndarray) -> np.ndarray:
-        """Estimate skew angle via minAreaRect on thresholded text pixels, then rotate to correct."""
-        inverted = cv2.bitwise_not(gray)
-        thresh = cv2.threshold(inverted, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-        coords = cv2.findNonZero(thresh)
-
-        if coords is None:
-            return gray
-
-        angle = cv2.minAreaRect(coords)[-1]
-        if angle < -45:
-            angle = -(90 + angle)
-        else:
-            angle = -angle
-
-        (h, w) = gray.shape
-        center = (w // 2, h // 2)
-        M = cv2.getRotationMatrix2D(center, angle, 1.0)
-        rotated = cv2.warpAffine(
-            gray, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE
-        )
-        return rotated
-
-    def _run_tesseract(self, img: np.ndarray, lang: str) -> tuple[str, float]:
-        """Run tesseract, returning text and an averaged word-level confidence (0-1)."""
-        data = pytesseract.image_to_data(
-            img, lang=lang, output_type=pytesseract.Output.DICT
-        )
-
-        words = []
-        confidences = []
-        for i, word in enumerate(data["text"]):
-            if word.strip():
-                words.append(word)
-                conf = float(data["conf"][i])
-                if conf >= 0:  # -1 means no confidence available
-                    confidences.append(conf)
-
-        text = " ".join(words)
-        avg_conf = (sum(confidences) / len(confidences) / 100.0) if confidences else 0.0
-        return text, avg_conf
+        with zipfile.ZipFile(io.BytesIO(response.content)) as z:
+            md_files = [n for n in z.namelist() if n.endswith(".md")]
+            if not md_files:
+                raise RuntimeError(f"No .md output found in Sarvam result zip: {z.namelist()}")
+            with z.open(md_files[0]) as f:
+                return f.read().decode("utf-8")
