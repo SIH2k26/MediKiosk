@@ -37,7 +37,7 @@ class Settings(BaseSettings):
 
     # --- LLM fallback (Gemini) ---
     google_gemini_api_key: str = ""
-    gemini_fallback_model: str = "gemini-3.5-flash-lite"
+    gemini_fallback_model: str = "gemini-2.0-flash"
 
     # --- provider routing ---
     asr_primary: str = "sarvam"

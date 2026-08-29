@@ -66,14 +66,24 @@ app = FastAPI(
 )
 
 # CORS
-allow_origins = [settings.api_base_url]
+allow_origins = [
+    settings.api_base_url,
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "http://localhost:4000",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+    "http://127.0.0.1:3002",
+    "http://127.0.0.1:4000",
+]
 if settings.dev_allow_kiosk_cors:
     allow_origins.append(settings.kiosk_url)
-    logger.warning(f"⚠️ DEV_ALLOW_KIOSK_CORS is TRUE. Allowing cross-origin requests from {settings.kiosk_url}.")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
