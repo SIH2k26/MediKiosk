@@ -111,9 +111,12 @@ export default function HistoryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSection, fetchNextQuestion]);
 
+  const [inputMode, setInputMode] = useState<'VOICE' | 'TEXT'>('VOICE');
+  const [textAnswer, setTextAnswer] = useState('');
+
   const handleStartRecording = async () => {
-    if (isPlaying) stopSpeech();
     try {
+      stopSpeech();
       await startRecording(handleStopRecording);
       setStatus('RECORDING');
     } catch (e) {
@@ -140,17 +143,17 @@ export default function HistoryPage() {
     }
   };
 
-  const handleConfirmAnswer = (finalAnswer: string) => {
-    console.log(`handleConfirmAnswer called with: ${finalAnswer}`);
-    if (!question || isFetchingRef.current) {
-      console.log(`handleConfirmAnswer: returning early (question null or fetching).`);
+  const handleConfirmAnswer = (finalAnswer: string, answerType: 'VOICE' | 'TOUCH' | 'TEXT' = 'VOICE') => {
+    console.log(`handleConfirmAnswer called with: ${finalAnswer} (type: ${answerType})`);
+    if (!finalAnswer.trim() || !question || isFetchingRef.current) {
+      console.log(`handleConfirmAnswer: returning early (answer empty, question null, or fetching).`);
       return;
     }
     const newAnswer = {
       question_id: question.id,
       question_text: question.text,
-      answer_type: 'VOICE',
-      raw_answer: finalAnswer,
+      answer_type: answerType,
+      raw_answer: finalAnswer.trim(),
       section_type: currentSection
     };
     
@@ -158,6 +161,8 @@ export default function HistoryPage() {
     const newAnswers = [...answers, newAnswer];
     setAnswers(newAnswers);
     setTranscript('');
+    setTextAnswer('');
+    setInputMode('VOICE');
     setQuestion(null);
     
     // Explicitly pass updated answers to avoid closure staleness
@@ -236,13 +241,62 @@ export default function HistoryPage() {
             {status === 'READY' && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-6)' }}>
                 
-                {/* Voice Input */}
-                <button 
-                  className="btn btn-primary btn-xl"
-                  onClick={handleStartRecording}
-                >
-                  <span style={{ fontSize: '1.5em' }}>🎤</span> Tap to Speak
-                </button>
+                {/* Input Mode Selector */}
+                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'center', marginBottom: 'var(--space-2)' }}>
+                  <button
+                    className={`btn ${inputMode === 'VOICE' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setInputMode('VOICE')}
+                    style={{ padding: '0.45rem 1.25rem', fontSize: '0.9rem' }}
+                  >
+                    🎤 Voice Input
+                  </button>
+                  <button
+                    className={`btn ${inputMode === 'TEXT' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setInputMode('TEXT')}
+                    style={{ padding: '0.45rem 1.25rem', fontSize: '0.9rem' }}
+                  >
+                    ⌨️ Type Answer
+                  </button>
+                </div>
+
+                {inputMode === 'VOICE' ? (
+                  /* Voice Input */
+                  <button 
+                    className="btn btn-primary btn-xl"
+                    onClick={handleStartRecording}
+                  >
+                    <span style={{ fontSize: '1.5em' }}>🎤</span> Tap to Speak
+                  </button>
+                ) : (
+                  /* Texting / Keyboard Input Option */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', width: '100%', maxWidth: '600px' }}>
+                    <textarea
+                      placeholder="Type your answer here in your preferred language..."
+                      value={textAnswer}
+                      onChange={(e) => setTextAnswer(e.target.value)}
+                      rows={3}
+                      style={{
+                        width: '100%',
+                        padding: '1rem',
+                        fontSize: '1.1rem',
+                        borderRadius: 'var(--radius-lg)',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid var(--color-border)',
+                        color: '#fff',
+                        resize: 'none',
+                        fontFamily: 'inherit',
+                      }}
+                    />
+                    <button
+                      className="btn btn-primary btn-lg"
+                      disabled={!textAnswer.trim()}
+                      onClick={() => handleConfirmAnswer(textAnswer, 'TEXT')}
+                      style={{ alignSelf: 'flex-end' }}
+                    >
+                      Submit Answer →
+                    </button>
+                  </div>
+                )}
                 
                 {/* Touch Options */}
                 {question.options && question.options.length > 0 && (
@@ -251,7 +305,7 @@ export default function HistoryPage() {
                       <button 
                         key={opt.id}
                         className="btn btn-secondary"
-                        onClick={() => handleConfirmAnswer(opt.value)}
+                        onClick={() => handleConfirmAnswer(opt.value, 'TOUCH')}
                       >
                         {opt.label} {opt.hindi_label ? `(${opt.hindi_label})` : ''}
                       </button>
