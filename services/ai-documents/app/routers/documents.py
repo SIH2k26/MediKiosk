@@ -1,16 +1,25 @@
 """Document processing router."""
 import time
 import logging
+import asyncio
 
 import httpx
 from fastapi import APIRouter, HTTPException
 
-from app.models.schemas import ProcessDocumentRequest, ProcessDocumentResponse
+
+from app.models.schemas import (
+    ProcessDocumentRequest,
+    ProcessDocumentResponse,
+    BatchProcessRequest,
+    DocumentProcessResult,
+    BatchProcessResponse,
+)
 from app.ocr.pipeline import OCRPipeline
 from app.extraction.entities import EntityExtractor
 from app.timeline.builder import TimelineBuilder
 from app.normalization.normalizer import normalize_medication_name, normalize_investigation_name, normalize_unit
 from app.analysis.abnormal_detector import classify_investigation
+
 
 logger = logging.getLogger(__name__)
 
@@ -99,4 +108,38 @@ async def process_document(request: ProcessDocumentRequest) -> ProcessDocumentRe
         timeline_events=timeline_events,
         processing_duration_ms=duration_ms,
         model_used=entity_extractor.model.model_name if hasattr(entity_extractor.model, "model_name") else None,
+    )
+
+MAX_CONCURRENT_DOCUMENTS = 3  # keep well under Sarvam's 10 req/min limit
+_semaphore = asyncio.Semaphore(MAX_CONCURRENT_DOCUMENTS)
+
+
+async def _process_single_safe(request: ProcessDocumentRequest) -> DocumentProcessResult:
+    """Process one document, catching errors so one bad file doesn't fail the whole batch."""
+    async with _semaphore:
+        try:
+            result = await process_document(request)
+            return DocumentProcessResult(document_id=request.document_id, success=True, result=result)
+        except HTTPException as e:
+            return DocumentProcessResult(document_id=request.document_id, success=False, error=e.detail)
+        except Exception as e:
+            return DocumentProcessResult(document_id=request.document_id, success=False, error=str(e))
+
+
+@router.post("/process-batch", response_model=BatchProcessResponse)
+async def process_documents_batch(request: BatchProcessRequest) -> BatchProcessResponse:
+    """
+    Process multiple documents concurrently (feature 18: multiple-document handling).
+    Concurrency is capped to respect Sarvam's rate limit; one document failing
+    doesn't block the others — each result is reported independently.
+    """
+    tasks = [_process_single_safe(doc) for doc in request.documents]
+    results = await asyncio.gather(*tasks)
+
+    succeeded = sum(1 for r in results if r.success)
+    return BatchProcessResponse(
+        results=results,
+        total=len(results),
+        succeeded=succeeded,
+        failed=len(results) - succeeded,
     )

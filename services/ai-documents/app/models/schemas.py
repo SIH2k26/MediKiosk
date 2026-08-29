@@ -93,3 +93,20 @@ class ProcessDocumentResponse(BaseModel):
     timeline_events: List[TimelineEvent] = []
     processing_duration_ms: int
     model_used: Optional[str] = None
+
+class BatchProcessRequest(BaseModel):
+    documents: List[ProcessDocumentRequest]
+
+
+class DocumentProcessResult(BaseModel):
+    document_id: str
+    success: bool
+    result: Optional[ProcessDocumentResponse] = None
+    error: Optional[str] = None
+
+
+class BatchProcessResponse(BaseModel):
+    results: List[DocumentProcessResult]
+    total: int
+    succeeded: int
+    failed: int
