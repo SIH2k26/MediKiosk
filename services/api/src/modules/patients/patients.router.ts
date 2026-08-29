@@ -84,6 +84,109 @@ patientsRouter.get(
   }
 );
 
+const OTP_EXPIRY_MS = 5 * 60 * 1000;
+const OTP_MAX_ATTEMPTS = 5;
+
+/**
+ * POST /api/patients/otp/send
+ * Generate an OTP for optional phone verification during kiosk onboarding.
+ * SMS delivery is mocked: outside production the code is returned as devCode.
+ * MUST be registered before /:id route.
+ */
+patientsRouter.post('/otp/send', async (req: Request, res: Response, next) => {
+  try {
+    const { phone } = req.body || {};
+    if (typeof phone !== 'string' || !/^[6-9]\d{9}$/.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'BAD_REQUEST', message: 'A valid 10-digit Indian mobile number is required' },
+      });
+    }
+
+    const supabase = createSupabaseServiceClient();
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+
+    // Invalidate previous unverified OTPs for this phone
+    await supabase
+      .from('otp_verifications')
+      .update({ expires_at: new Date().toISOString() })
+      .eq('phone', phone)
+      .eq('verified', false);
+
+    const { error } = await supabase.from('otp_verifications').insert({
+      phone,
+      code,
+      expires_at: new Date(Date.now() + OTP_EXPIRY_MS).toISOString(),
+    });
+    if (error) return next(error);
+
+    // TODO: integrate real SMS gateway. Mocked for prototype.
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.status(201).json({
+      success: true,
+      data: {
+        sent: true,
+        expiresInSeconds: OTP_EXPIRY_MS / 1000,
+        ...(isProduction ? {} : { devCode: code }),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/patients/otp/verify
+ * Verify an OTP previously sent to a phone number.
+ */
+patientsRouter.post('/otp/verify', async (req: Request, res: Response, next) => {
+  try {
+    const { phone, code } = req.body || {};
+    if (typeof phone !== 'string' || typeof code !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'BAD_REQUEST', message: 'phone and code are required' },
+      });
+    }
+
+    const supabase = createSupabaseServiceClient();
+    const { data: otp, error } = await supabase
+      .from('otp_verifications')
+      .select('*')
+      .eq('phone', phone)
+      .eq('verified', false)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) return next(error);
+
+    if (!otp || otp.attempts >= OTP_MAX_ATTEMPTS) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'OTP_INVALID', message: 'OTP expired or too many attempts. Request a new one.' },
+      });
+    }
+
+    if (otp.code !== code) {
+      await supabase
+        .from('otp_verifications')
+        .update({ attempts: otp.attempts + 1 })
+        .eq('id', otp.id);
+      return res.status(400).json({
+        success: false,
+        error: { code: 'OTP_INCORRECT', message: 'Incorrect OTP. Please try again.' },
+      });
+    }
+
+    await supabase.from('otp_verifications').update({ verified: true }).eq('id', otp.id);
+
+    res.json({ success: true, data: { verified: true } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 /**
  * POST /api/patients
  * Register a new patient (kiosk walk-in or ABHA-linked).
