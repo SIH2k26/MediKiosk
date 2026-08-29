@@ -20,6 +20,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.47.2
+        version: 2.112.4
       next:
         specifier: 16.3.2
         version: 16.3.2(@babel/core@7.29.7)(@playwright/test@1.62.1)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -51,6 +54,9 @@ importers:
 
   apps/doctor:
     dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.47.2
+        version: 2.112.4
       next:
         specifier: 16.3.2
         version: 16.3.2(@babel/core@7.29.7)(@playwright/test@1.62.1)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -88,6 +94,9 @@ importers:
       '@medikiosk/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
+      '@supabase/supabase-js':
+        specifier: ^2.112.4
+        version: 2.112.4
       next:
         specifier: 16.3.2
         version: 16.3.2(@babel/core@7.29.7)(@playwright/test@1.62.1)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)

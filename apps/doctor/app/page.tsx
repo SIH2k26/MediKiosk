@@ -1,6 +1,9 @@
 'use client';
 import './globals.css';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { getCurrentDoctorUser, signOutDoctor, type DoctorUser } from '../lib/auth';
 
 // Mock queue data for Phase 1 UI scaffold
 const MOCK_QUEUE = [
@@ -28,9 +31,41 @@ function riskBadge(risk: string) {
 }
 
 export default function DoctorPortalPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<DoctorUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  useEffect(() => {
+    getCurrentDoctorUser().then((u) => {
+      if (!u) {
+        router.replace('/login');
+      } else {
+        setUser(u);
+        setAuthChecked(true);
+      }
+    });
+  }, [router]);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    await signOutDoctor();
+    router.replace('/login');
+  };
+
+  // Show nothing while checking auth to avoid flash
+  if (!authChecked) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#0F1117' }}>
+        <div className="page-spinner" aria-label="Authenticating…" />
+      </div>
+    );
+  }
+
   const emergency    = MOCK_QUEUE.filter(p => p.risk === 'EMERGENCY').length;
   const highPriority = MOCK_QUEUE.filter(p => p.risk === 'HIGH_PRIORITY').length;
   const totalWaiting = MOCK_QUEUE.length;
+  const initials     = user ? user.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'DR';
 
   return (
     <div className="portal-layout">
@@ -58,9 +93,27 @@ export default function DoctorPortalPage() {
         <a href="/history"  className="nav-item">📁 History Records</a>
 
         <div style={{ marginTop: 'auto' }}>
+          {/* User badge */}
+          {user && (
+            <div className="sidebar-user-badge">
+              <div className="sidebar-user-avatar" aria-hidden="true">{initials}</div>
+              <div className="sidebar-user-info">
+                <div className="sidebar-user-name">{user.fullName}</div>
+                <div className="sidebar-user-role">{user.role}</div>
+              </div>
+            </div>
+          )}
           <div className="nav-section-label">Account</div>
           <a href="/settings" className="nav-item">⚙️ Settings</a>
-          <a href="/logout"   className="nav-item">🚪 Logout</a>
+          <button
+            id="doctor-signout-btn"
+            className="nav-item nav-item-signout"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            aria-label="Sign out of doctor portal"
+          >
+            🚪 {signingOut ? 'Signing out…' : 'Sign Out'}
+          </button>
         </div>
       </aside>
 
@@ -76,8 +129,12 @@ export default function DoctorPortalPage() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Dr. Priya Sharma</span>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>P</div>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+              {user?.fullName ?? 'Doctor'}
+            </span>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
+              {initials}
+            </div>
           </div>
         </div>
 
