@@ -4,24 +4,28 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../lib/api-client';
 
+type IntakeMode = 'CHOOSE' | 'PHONE' | 'OTP' | 'ABHA' | 'REGISTER';
+
 export default function IdentifyPage() {
   const router = useRouter();
-  
+
   // Intake state
   const [language, setLanguage] = useState('hi');
-  const [intakeMode, setIntakeMode] = useState<'CHOOSE' | 'PHONE' | 'REGISTER'>('CHOOSE');
-  
+  const [intakeMode, setIntakeMode] = useState<IntakeMode>('CHOOSE');
+
   // Forms state
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [abhaId, setAbhaId] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState<'MALE' | 'FEMALE' | 'OTHER' | ''>('');
-  
+
   // Verification states
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [existingPatient, setExistingPatient] = useState<any | null>(null);
 
   useEffect(() => {
     const lang = sessionStorage.getItem('mk_lang') || 'hi';
@@ -38,10 +42,10 @@ export default function IdentifyPage() {
     setErrorMsg(null);
     try {
       // Step 1: Create or fetch patient record in DB
-      const patient = await api.createPatient(patientData);
+      const patient = patientData.id ? patientData : await api.createPatient(patientData);
       sessionStorage.setItem('mk_patient', JSON.stringify(patient));
-      
-      // Step 2: Initialize intake session
+
+      // Step 2: Initialize intake session (issues the OPD token)
       const session = await api.startSession(patient.id, language);
       sessionStorage.setItem('mk_session', JSON.stringify(session));
 
@@ -53,7 +57,34 @@ export default function IdentifyPage() {
     }
   };
 
-  // Lookup existing user by phone number
+  // Lookup existing user by phone number (after optional OTP verification)
+  const lookupByPhone = async () => {
+    setIsLoading(true);
+    setErrorMsg(null);
+    try {
+      const patient = await api.createPatient({
+        firstName: translate('Walk-in', 'आगंतुक'),
+        lastName: 'Patient',
+        phone: phoneNumber,
+        preferredLanguage: language as any,
+        isAnonymous: false,
+      });
+
+      // If it's a freshly created stub, collect their actual details
+      if (patient.firstName === 'Walk-in' || patient.firstName === 'आगंतुक') {
+        setIntakeMode('REGISTER');
+        setIsLoading(false);
+      } else {
+        // Patient already has a complete profile, proceed directly
+        await handleProceed(patient);
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Verification failed');
+      setIsLoading(false);
+    }
+  };
+
+  // Step 1 of phone flow: send OTP (mock SMS — devCode returned in development)
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!/^[6-9]\d{9}$/.test(phoneNumber)) {
@@ -63,28 +94,65 @@ export default function IdentifyPage() {
 
     setIsLoading(true);
     setErrorMsg(null);
-
     try {
-      // Lookup / create patient by phone number
+      const result = await api.sendOtp(phoneNumber);
+      setDevOtpHint(result.devCode || null);
+      setOtpCode('');
+      setIntakeMode('OTP');
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Could not send OTP');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Step 2 of phone flow: verify OTP (optional — patient may skip)
+  const handleOtpVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!/^\d{6}$/.test(otpCode)) {
+      setErrorMsg(translate('Please enter the 6-digit OTP.', 'कृपया 6 अंकों का ओटीपी दर्ज करें।'));
+      return;
+    }
+    setIsLoading(true);
+    setErrorMsg(null);
+    try {
+      await api.verifyOtp(phoneNumber, otpCode);
+      await lookupByPhone();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'OTP verification failed');
+      setIsLoading(false);
+    }
+  };
+
+  // ABHA-based identification (Ayushman Bharat Health Account)
+  const handleAbhaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleaned = abhaId.replace(/[\s-]/g, '');
+    if (!/^\d{14}$/.test(cleaned)) {
+      setErrorMsg(translate('Please enter a valid 14-digit ABHA number.', 'कृपया सही 14-अंकीय ABHA नंबर दर्ज करें।'));
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMsg(null);
+    try {
       const patient = await api.createPatient({
-        firstName: translate('Walk-in', 'आगंतुक'),
+        firstName: translate('ABHA', 'ABHA'),
         lastName: 'Patient',
-        phone: phoneNumber,
+        abhaId: cleaned,
         preferredLanguage: language as any,
         isAnonymous: false,
       });
 
-      // If it's a freshly created stub, let's collect their actual name
-      if (patient.firstName === 'Walk-in' || patient.firstName === 'आगंतुक') {
-        setExistingPatient(patient);
+      if (patient.firstName === 'ABHA') {
+        // Fresh stub — collect demographics
         setIntakeMode('REGISTER');
+        setIsLoading(false);
       } else {
-        // Patient already has a complete profile, proceed directly
         await handleProceed(patient);
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Verification failed');
-    } finally {
+      setErrorMsg(err.message || 'ABHA lookup failed');
       setIsLoading(false);
     }
   };
@@ -97,12 +165,14 @@ export default function IdentifyPage() {
       return;
     }
 
+    const cleanedAbha = abhaId.replace(/[\s-]/g, '');
     const patientPayload = {
       firstName,
       lastName,
       age: parseInt(age, 10),
       gender: gender as any,
       phone: phoneNumber || undefined,
+      abhaId: cleanedAbha || undefined,
       preferredLanguage: language as any,
       isAnonymous: false,
     };
@@ -188,7 +258,7 @@ export default function IdentifyPage() {
               className="fade-in-up fade-in-up-delay-1"
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
+                gridTemplateColumns: 'repeat(3, 1fr)',
                 gap: '1.5rem',
                 marginBottom: '2rem',
               }}
@@ -205,6 +275,21 @@ export default function IdentifyPage() {
                 </span>
                 <span className="lang-card-native" style={{ fontSize: '0.9rem' }}>
                   {translate('Saves history for future visits', 'भविष्य के लिए जानकारी सुरक्षित रखेगा')}
+                </span>
+              </button>
+
+              {/* ABHA option */}
+              <button
+                className="lang-card"
+                onClick={() => setIntakeMode('ABHA')}
+                style={{ minHeight: '180px' }}
+              >
+                <span style={{ fontSize: '3rem' }}>🆔</span>
+                <span className="lang-card-name">
+                  {translate('Use ABHA Number', 'ABHA नंबर से पहचान करें')}
+                </span>
+                <span className="lang-card-native" style={{ fontSize: '0.9rem' }}>
+                  {translate('Ayushman Bharat Health Account', 'आयुष्मान भारत हेल्थ अकाउंट')}
                 </span>
               </button>
 
@@ -268,14 +353,124 @@ export default function IdentifyPage() {
                   {translate('Cancel', 'रद्द करें')}
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={isLoading}>
-                  {isLoading ? translate('Checking...', 'जांच की जा रही है...') : translate('Send OTP', 'ओटीपी भेजें')}
+                  {isLoading ? translate('Sending...', 'भेजा जा रहा है...') : translate('Send OTP', 'ओटीपी भेजें')}
                 </button>
               </div>
             </form>
           </div>
         )}
 
-        {/* 3. NEW USER REGISTRATION FORM */}
+        {/* 3. OTP VERIFICATION (optional — patient may skip) */}
+        {intakeMode === 'OTP' && (
+          <div className="card fade-in-up">
+            <h2 className="text-heading" style={{ marginBottom: '0.5rem', textAlign: 'center' }}>
+              {translate('Verify OTP', 'ओटीपी सत्यापित करें')}
+            </h2>
+            <p className="text-muted text-body" style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+              {translate(`OTP sent to ${phoneNumber}`, `${phoneNumber} पर ओटीपी भेजा गया है`)}
+            </p>
+
+            {/* Development helper: mock SMS gateway returns the code */}
+            {devOtpHint && (
+              <div
+                style={{
+                  background: 'rgba(26,115,232,0.1)',
+                  border: '1px dashed var(--color-primary)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '0.75rem',
+                  fontSize: '0.85rem',
+                  textAlign: 'center',
+                  marginBottom: '1.5rem',
+                  color: 'var(--color-text-secondary)',
+                }}
+              >
+                🧪 {translate('Dev mode — your OTP is:', 'डेव मोड — आपका ओटीपी:')} <strong>{devOtpHint}</strong>
+              </div>
+            )}
+
+            <form onSubmit={handleOtpVerify} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <input
+                type="tel"
+                className="form-input"
+                style={{ fontSize: '1.6rem', textAlign: 'center', letterSpacing: '0.5rem' }}
+                placeholder="••••••"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                disabled={isLoading}
+                autoFocus
+                required
+              />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setIntakeMode('PHONE')}
+                  disabled={isLoading}
+                >
+                  {translate('Go Back', 'पीछे जाएं')}
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={isLoading}>
+                  {isLoading ? translate('Verifying...', 'सत्यापित हो रहा है...') : translate('Verify & Continue', 'सत्यापित करें')}
+                </button>
+              </div>
+
+              {/* OTP is optional — allow proceeding without verification */}
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ fontSize: '0.9rem' }}
+                onClick={lookupByPhone}
+                disabled={isLoading}
+              >
+                {translate('Skip verification and continue →', 'सत्यापन छोड़ें और आगे बढ़ें →')}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* 4. ABHA INPUT */}
+        {intakeMode === 'ABHA' && (
+          <div className="card fade-in-up">
+            <h2 className="text-heading" style={{ marginBottom: '0.5rem', textAlign: 'center' }}>
+              {translate('Enter ABHA Number', 'ABHA नंबर दर्ज करें')}
+            </h2>
+            <p className="text-muted text-body" style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+              {translate('Your 14-digit Ayushman Bharat Health Account number.', 'आपका 14-अंकीय आयुष्मान भारत हेल्थ अकाउंट नंबर।')}
+            </p>
+            <form onSubmit={handleAbhaSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <input
+                type="tel"
+                className="form-input"
+                style={{ fontSize: '1.3rem', textAlign: 'center', letterSpacing: '0.15rem' }}
+                placeholder="e.g. 12345678901234"
+                value={abhaId}
+                onChange={(e) => setAbhaId(e.target.value.replace(/[^\d\s-]/g, '').slice(0, 17))}
+                disabled={isLoading}
+                autoFocus
+                required
+              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setAbhaId('');
+                    setIntakeMode('CHOOSE');
+                  }}
+                  disabled={isLoading}
+                >
+                  {translate('Cancel', 'रद्द करें')}
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={isLoading}>
+                  {isLoading ? translate('Checking...', 'जांच की जा रही है...') : translate('Continue', 'जारी रखें')}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* 5. NEW USER REGISTRATION FORM */}
         {intakeMode === 'REGISTER' && (
           <div className="card fade-in-up">
             <h2 className="text-heading" style={{ marginBottom: '0.5rem', textAlign: 'center' }}>
@@ -354,7 +549,7 @@ export default function IdentifyPage() {
                     setLastName('');
                     setAge('');
                     setGender('');
-                    setIntakeMode('PHONE');
+                    setIntakeMode('CHOOSE');
                   }}
                   disabled={isLoading}
                 >
