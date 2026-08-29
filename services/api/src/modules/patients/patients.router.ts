@@ -1,8 +1,10 @@
 import { Router, Request, Response } from 'express';
+import { createHash, timingSafeEqual } from 'crypto';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { CreatePatientSchema } from '@medikiosk/clinical-schema';
 import { createSupabaseServerClient, createSupabaseServiceClient } from '../../utils/supabase';
 import { createNotFoundError } from '../../middleware/errorHandler';
+import { sendOtpSms, getSmsProvider } from '../../utils/sms';
 
 export const patientsRouter = Router();
 
@@ -86,11 +88,25 @@ patientsRouter.get(
 
 const OTP_EXPIRY_MS = 5 * 60 * 1000;
 const OTP_MAX_ATTEMPTS = 5;
+const OTP_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const OTP_RATE_LIMIT_MAX_SENDS = 3;
+
+/** OTP codes are stored hashed — never in plain text. */
+function hashOtp(code: string): string {
+  return createHash('sha256').update(code).digest('hex');
+}
+
+function otpMatches(code: string, storedHash: string): boolean {
+  const candidate = Buffer.from(hashOtp(code));
+  const stored = Buffer.from(storedHash);
+  return candidate.length === stored.length && timingSafeEqual(candidate, stored);
+}
 
 /**
  * POST /api/patients/otp/send
  * Generate an OTP for optional phone verification during kiosk onboarding.
- * SMS delivery is mocked: outside production the code is returned as devCode.
+ * Delivery uses the configured SMS provider (MSG91 / Twilio / MOCK).
+ * With the MOCK provider (development), the code is returned as devCode.
  * MUST be registered before /:id route.
  */
 patientsRouter.post('/otp/send', async (req: Request, res: Response, next) => {
@@ -104,6 +120,21 @@ patientsRouter.post('/otp/send', async (req: Request, res: Response, next) => {
     }
 
     const supabase = createSupabaseServiceClient();
+
+    // Rate limit: max OTP sends per phone within the window (prevents SMS abuse)
+    const windowStart = new Date(Date.now() - OTP_RATE_LIMIT_WINDOW_MS).toISOString();
+    const { count: recentSends } = await supabase
+      .from('otp_verifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('phone', phone)
+      .gte('created_at', windowStart);
+    if ((recentSends ?? 0) >= OTP_RATE_LIMIT_MAX_SENDS) {
+      return res.status(429).json({
+        success: false,
+        error: { code: 'RATE_LIMITED', message: 'Too many OTP requests. Please try again later.' },
+      });
+    }
+
     const code = String(Math.floor(100000 + Math.random() * 900000));
 
     // Invalidate previous unverified OTPs for this phone
@@ -115,19 +146,22 @@ patientsRouter.post('/otp/send', async (req: Request, res: Response, next) => {
 
     const { error } = await supabase.from('otp_verifications').insert({
       phone,
-      code,
+      code: hashOtp(code), // stored hashed
       expires_at: new Date(Date.now() + OTP_EXPIRY_MS).toISOString(),
     });
     if (error) return next(error);
 
-    // TODO: integrate real SMS gateway. Mocked for prototype.
-    const isProduction = process.env.NODE_ENV === 'production';
+    // Deliver via the configured provider (throws on gateway failure)
+    await sendOtpSms(phone, code);
+
+    // Only expose the code with the MOCK provider outside production
+    const exposeDevCode = getSmsProvider() === 'MOCK' && process.env.NODE_ENV !== 'production';
     res.status(201).json({
       success: true,
       data: {
         sent: true,
         expiresInSeconds: OTP_EXPIRY_MS / 1000,
-        ...(isProduction ? {} : { devCode: code }),
+        ...(exposeDevCode ? { devCode: code } : {}),
       },
     });
   } catch (err) {
@@ -168,7 +202,7 @@ patientsRouter.post('/otp/verify', async (req: Request, res: Response, next) => 
       });
     }
 
-    if (otp.code !== code) {
+    if (!otpMatches(code, otp.code)) {
       await supabase
         .from('otp_verifications')
         .update({ attempts: otp.attempts + 1 })
