@@ -1,142 +1,118 @@
-"""
-Dialogue Manager — Adaptive clinical questioning engine.
-Phase 3 will implement full LLM-powered adaptive questioning.
-This stub provides the interface and deterministic question selection.
-"""
+"""Dialogue Manager ?" Adaptive clinical questioning engine."""
+import logging
+import json
 from typing import List, Optional
-from dataclasses import dataclass
+from pydantic import BaseModel
+from app.models.schemas import DialogueStateRequest, NextQuestionResponse, ClinicalQuestion, ProgressEstimate, HistorySectionType
+from app.ontology import clinical_ontology
+from app.clients.llm import LLMClient, LLMUnavailableError
 
+logger = logging.getLogger(__name__)
 
-@dataclass
-class NextQuestion:
-    question_id: str
-    question_text: str
-    hindi_text: Optional[str]
-    section_type: str
-    options: Optional[List[dict]]
-    input_type: str  # 'VOICE_OR_TOUCH' | 'VOICE_ONLY' | 'TOUCH_ONLY'
-
-
-# Structured clinical question ontology (subset for Chief Complaint + HPI)
-# Phase 3: Load from database; support complaint-specific modules
-QUESTION_BANK = {
-    "CHIEF_COMPLAINT": [
-        {
-            "id": "cc_001",
-            "text": "What is the main problem that brought you here today?",
-            "hindi_text": "आज आप यहाँ किस मुख्य समस्या के लिए आए हैं?",
-            "input_type": "VOICE_OR_TOUCH",
-            "options": None,
-        },
-        {
-            "id": "cc_002",
-            "text": "How long have you had this problem?",
-            "hindi_text": "यह समस्या आपको कितने समय से है?",
-            "input_type": "VOICE_OR_TOUCH",
-            "options": [
-                {"id": "o1", "label": "Today", "hindi_label": "आज", "value": "today"},
-                {"id": "o2", "label": "Few days", "hindi_label": "कुछ दिन", "value": "few_days"},
-                {"id": "o3", "label": "Weeks", "hindi_label": "हफ्ते", "value": "weeks"},
-                {"id": "o4", "label": "Months", "hindi_label": "महीने", "value": "months"},
-                {"id": "o5", "label": "Years", "hindi_label": "सालों से", "value": "years"},
-            ],
-        },
-    ],
-    "HPI": [
-        {
-            "id": "hpi_001",
-            "text": "How severe is the pain or discomfort on a scale of 1 to 10?",
-            "hindi_text": "1 से 10 के पैमाने पर दर्द या तकलीफ कितनी है?",
-            "input_type": "VOICE_OR_TOUCH",
-            "options": [
-                {"id": f"s{i}", "label": str(i), "value": str(i)} for i in range(1, 11)
-            ],
-        },
-        {
-            "id": "hpi_002",
-            "text": "Does the pain go anywhere else?",
-            "hindi_text": "क्या दर्द कहीं और भी जाता है?",
-            "input_type": "VOICE_OR_TOUCH",
-            "options": [
-                {"id": "r1", "label": "Yes", "hindi_label": "हाँ", "value": "yes"},
-                {"id": "r2", "label": "No", "hindi_label": "नहीं", "value": "no"},
-            ],
-        },
-    ],
-    "MEDICATIONS": [
-        {
-            "id": "med_001",
-            "text": "Are you currently taking any medicines?",
-            "hindi_text": "क्या आप अभी कोई दवाई ले रहे हैं?",
-            "input_type": "VOICE_OR_TOUCH",
-            "options": [
-                {"id": "m1", "label": "Yes", "hindi_label": "हाँ", "value": "yes"},
-                {"id": "m2", "label": "No", "hindi_label": "नहीं", "value": "no"},
-            ],
-        },
-    ],
-    "ALLERGIES": [
-        {
-            "id": "allergy_001",
-            "text": "Do you have any known allergies to medicines or food?",
-            "hindi_text": "क्या आपको किसी दवाई या खाने से एलर्जी है?",
-            "input_type": "VOICE_OR_TOUCH",
-            "options": [
-                {"id": "a1", "label": "Yes", "hindi_label": "हाँ", "value": "yes"},
-                {"id": "a2", "label": "No", "hindi_label": "नहीं", "value": "no"},
-                {"id": "a3", "label": "Not sure", "hindi_label": "पक्का नहीं", "value": "unsure"},
-            ],
-        },
-    ],
-}
-
+class NextQuestionPick(BaseModel):
+    next_question_id: Optional[str]
 
 class DialogueManager:
-    """
-    Manages the adaptive clinical interview flow.
-    
-    Phase 3 implementation will:
-    - Use Gemini to analyze collected answers
-    - Determine next question based on clinical template + conditional branches
-    - Detect when a section is complete
-    - Trigger red-flag follow-ups
-    """
-
-    def get_questions_for_section(self, section_type: str) -> List[dict]:
-        """Return all questions for a given section."""
-        return QUESTION_BANK.get(section_type, [])
-
-    def get_next_question(
-        self,
-        section_type: str,
-        answered_question_ids: List[str],
-        collected_data: dict,
-    ) -> Optional[NextQuestion]:
-        """
-        Determine the next question to ask.
+    async def get_next_question(self, request: DialogueStateRequest) -> NextQuestionResponse:
+        section = request.section_type.value
         
-        Currently uses simple sequential ordering.
-        Phase 3: Replace with LLM-powered adaptive selection.
-        """
-        questions = QUESTION_BANK.get(section_type, [])
-        for q in questions:
-            if q["id"] not in answered_question_ids:
-                return NextQuestion(
-                    question_id=q["id"],
-                    question_text=q["text"],
-                    hindi_text=q.get("hindi_text"),
-                    section_type=section_type,
-                    options=q.get("options"),
-                    input_type=q.get("input_type", "VOICE_OR_TOUCH"),
-                )
-        return None  # Section complete
+        if not clinical_ontology.is_known_section(section):
+            return self._complete_section(section)
+            
+        answered = set(request.answered_question_ids)
+        
+        module = None
+        if section == "HPI":
+            module = clinical_ontology.match_module(request.chief_complaint)
+            module = clinical_ontology.resolve_module(section, module)
 
-    def is_section_complete(
-        self,
-        section_type: str,
-        answered_question_ids: List[str],
-    ) -> bool:
-        """Check if all required questions in a section have been answered."""
-        questions = QUESTION_BANK.get(section_type, [])
-        answered_set = set(answered_question_ids)
-        return all(q["id"] in answered_set for q in questions)
+        questions = clinical_ontology.raw_questions(section, module)
+        unanswered_qs = [q for q in questions if q["id"] not in answered]
+        
+        if not unanswered_qs:
+            return self._complete_section(section)
+            
+        # 1. Deterministic Required Slots
+        for q in unanswered_qs:
+            if q.get("is_required", True):
+                return self._build_response(q, request, len(answered), len(questions))
+                
+        # 2. Deterministic Priority Follow-ups
+        # If any priority_when token is found in the collected answers, ask that question immediately.
+        all_text = " ".join([str(a.get("raw_answer", "")).lower() for a in request.collected_answers])
+        for q in unanswered_qs:
+            tokens = q.get("priority_when", [])
+            if any(t.lower() in all_text for t in tokens if t.strip()):
+                logger.info(f"Priority follow-up triggered for question: {q['id']}")
+                return self._build_response(q, request, len(answered), len(questions))
+
+        # 3. LLM Adaptive Selection
+        # Ask the LLM to pick one of the remaining optional questions or None.
+        system_prompt = (
+            "You are an expert clinical AI assistant conducting a medical interview. "
+            "Your task is to decide which optional follow-up question is most medically relevant to ask next, "
+            "given the patient's chief complaint and their answers so far.\n\n"
+            "If none of the remaining optional questions are medically relevant or necessary (e.g. they denied related symptoms), "
+            "you must return null for next_question_id to gracefully end this section of the interview."
+        )
+        
+        user_prompt = f"Chief Complaint Module: {module or section}\n\nPatient's answers so far:\n"
+        for ans in request.collected_answers:
+            user_prompt += f"Q: {ans.get('question_text')}\nA: {ans.get('raw_answer')}\n\n"
+            
+        user_prompt += "Remaining optional questions you can choose from:\n"
+        for q in unanswered_qs:
+            user_prompt += f"- ID: {q['id']} | Text: {q['text']}\n"
+            
+        valid_ids = [q['id'] for q in unanswered_qs]
+        schema = {
+            "type": "object",
+            "properties": {
+                "next_question_id": {
+                    "type": ["string", "null"],
+                    "enum": valid_ids + [None]
+                }
+            },
+            "required": ["next_question_id"],
+            "additionalProperties": False
+        }
+        
+        try:
+            result_dict, model_used = await LLMClient.complete_json(
+                system=system_prompt,
+                user=user_prompt,
+                schema=schema,
+                schema_name="NextQuestionPick",
+                validator=NextQuestionPick.model_validate
+            )
+            picked_id = result_dict.get("next_question_id")
+            if picked_id:
+                # Find the matched question
+                for q in unanswered_qs:
+                    if q["id"] == picked_id:
+                        logger.info(f"LLM selectively chose optional question: {picked_id}")
+                        return self._build_response(q, request, len(answered), len(questions))
+        except Exception as e:
+            logger.warning(f"LLM adaptive questioning failed, falling back to sequential order: {e}")
+            # Offline/failure fallback: just ask the next optional question sequentially.
+            return self._build_response(unanswered_qs[0], request, len(answered), len(questions))
+
+        # If LLM returned null or we exhausted everything
+        return self._complete_section(section)
+
+    def _build_response(self, q: dict, request: DialogueStateRequest, answered_count: int, total_count: int) -> NextQuestionResponse:
+        clinical_q = clinical_ontology.to_clinical_question(q, request.language)
+        return NextQuestionResponse(
+            section_complete=False,
+            question=clinical_q,
+            progress=ProgressEstimate(answered=answered_count, section_total_estimate=total_count)
+        )
+
+    def _complete_section(self, current_section: str) -> NextQuestionResponse:
+        next_sec = clinical_ontology.next_section(current_section)
+        return NextQuestionResponse(
+            section_complete=True,
+            question=None,
+            progress=None,
+            next_section=next_sec
+        )

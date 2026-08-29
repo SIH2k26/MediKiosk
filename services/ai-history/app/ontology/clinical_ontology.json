@@ -1,0 +1,579 @@
+{
+  "section_order": [
+    "CHIEF_COMPLAINT",
+    "HPI",
+    "PAST_MEDICAL_HISTORY",
+    "MEDICATIONS",
+    "ALLERGIES",
+    "FAMILY_HISTORY",
+    "PERSONAL_HISTORY",
+    "REVIEW_OF_SYSTEMS"
+  ],
+  "sections": {
+    "CHIEF_COMPLAINT": {
+      "required_slots": ["cc_main"],
+      "questions": [
+        {
+          "id": "cc_main",
+          "slot": "cc_main",
+          "text": "What is the main reason for your visit today?",
+          "hindi_text": "आज आपके यहाँ आने का मुख्य कारण क्या है?",
+          "section_type": "CHIEF_COMPLAINT",
+          "input_type": "VOICE_OR_TOUCH",
+          "is_required": true
+        }
+      ]
+    },
+
+    "HPI": {
+      "required_slots": ["onset", "duration", "character", "severity"],
+      "complaint_modules": {
+        "chest_pain": {
+          "match": ["chest pain", "chest", "सीने में दर्द", "सीने", "seene", "seena", "sina", "छाती"],
+          "red_flag_tokens": ["radiation to arm", "jaw pain", "sweating", "shortness of breath"],
+          "questions": [
+            {
+              "id": "cp_onset",
+              "slot": "onset",
+              "text": "When did the chest pain start?",
+              "hindi_text": "सीने में दर्द कब शुरू हुआ?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "cp_duration",
+              "slot": "duration",
+              "text": "How long does the pain last each time?",
+              "hindi_text": "हर बार दर्द कितनी देर तक रहता है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "cp_character",
+              "slot": "character",
+              "text": "What does the pain feel like - pressure, burning, or sharp?",
+              "hindi_text": "दर्द कैसा महसूस होता है - दबाव, जलन, या चुभने जैसा?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true,
+              "options": [
+                { "id": "cp_ch_pressure", "label": "Pressure or heaviness", "hindi_label": "दबाव या भारीपन", "value": "pressure" },
+                { "id": "cp_ch_burning", "label": "Burning", "hindi_label": "जलन", "value": "burning" },
+                { "id": "cp_ch_sharp", "label": "Sharp or stabbing", "hindi_label": "तेज़ या चुभने जैसा", "value": "sharp" }
+              ]
+            },
+            {
+              "id": "cp_severity",
+              "slot": "severity",
+              "text": "On a scale of 1 to 10, how bad is the pain right now?",
+              "hindi_text": "1 से 10 के पैमाने पर, अभी दर्द कितना तेज़ है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "cp_radiation",
+              "text": "Does the pain spread to your arm, jaw or back?",
+              "hindi_text": "क्या दर्द बाँह, जबड़े या पीठ तक जाता है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": false,
+              "options": [
+                { "id": "cp_rad_yes", "label": "Yes", "hindi_label": "हाँ", "value": "yes" },
+                { "id": "cp_rad_no", "label": "No", "hindi_label": "नहीं", "value": "no" }
+              ],
+              "red_flag_triggers": ["radiation to arm", "jaw pain"]
+            },
+            {
+              "id": "cp_sweating",
+              "text": "Are you experiencing any sweating or shortness of breath?",
+              "hindi_text": "क्या आपको पसीना आ रहा है या सांस लेने में तकलीफ हो रही है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": false,
+              "priority_when": ["arm", "jaw", "shoulder", "back", "बाँह", "जबड़ा"],
+              "red_flag_triggers": ["sweating", "shortness of breath"]
+            },
+            {
+              "id": "cp_exertion",
+              "text": "Does the pain get worse when you walk or climb stairs?",
+              "hindi_text": "क्या चलने या सीढ़ियाँ चढ़ने पर दर्द बढ़ जाता है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": false
+            }
+          ]
+        },
+
+        "headache": {
+          "match": ["headache", "head ache", "head pain", "head hurts", "सिरदर्द", "सिर में दर्द", "sar dard", "sir dard"],
+          "red_flag_tokens": ["facial droop", "slurred speech", "weakness one side"],
+          "questions": [
+            {
+              "id": "ha_onset",
+              "slot": "onset",
+              "text": "When did the headache start?",
+              "hindi_text": "सिरदर्द कब शुरू हुआ?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "ha_duration",
+              "slot": "duration",
+              "text": "How long has each episode of headache lasted?",
+              "hindi_text": "सिरदर्द का हर दौरा कितनी देर तक रहा है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "ha_character",
+              "slot": "character",
+              "text": "Is the headache throbbing, pressing, or stabbing?",
+              "hindi_text": "सिरदर्द धड़कने जैसा, दबाव जैसा, या चुभने जैसा है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true,
+              "options": [
+                { "id": "ha_ch_throb", "label": "Throbbing", "hindi_label": "धड़कने जैसा", "value": "throbbing" },
+                { "id": "ha_ch_press", "label": "Pressing or tight", "hindi_label": "दबाव जैसा", "value": "pressing" },
+                { "id": "ha_ch_stab", "label": "Stabbing", "hindi_label": "चुभने जैसा", "value": "stabbing" }
+              ]
+            },
+            {
+              "id": "ha_severity",
+              "slot": "severity",
+              "text": "On a scale of 1 to 10, how severe is the headache?",
+              "hindi_text": "1 से 10 के पैमाने पर, सिरदर्द कितना गंभीर है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "ha_weakness",
+              "text": "Are you experiencing any weakness on one side of your body, or slurred speech?",
+              "hindi_text": "क्या आपको शरीर के एक हिस्से में कमजोरी महसूस हो रही है, या बोलने में दिक्कत हो रही है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": false,
+              "priority_when": ["sudden", "worst", "thunderclap", "अचानक", "10", "9"],
+              "red_flag_triggers": ["facial droop", "slurred speech", "weakness one side"]
+            },
+            {
+              "id": "ha_nausea",
+              "text": "Do you have nausea, vomiting, or discomfort in bright light?",
+              "hindi_text": "क्या आपको उल्टी जैसा लग रहा है, या तेज़ रोशनी से परेशानी हो रही है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": false
+            }
+          ]
+        },
+
+        "abdominal_pain": {
+          "match": ["stomach", "abdominal", "abdomen", "belly", "tummy", "pet", "पेट", "पेट दर्द", "pait"],
+          "red_flag_tokens": ["rigid abdomen", "blood in stool", "vomiting blood"],
+          "questions": [
+            {
+              "id": "ap_onset",
+              "slot": "onset",
+              "text": "When did the abdominal pain start?",
+              "hindi_text": "पेट दर्द कब शुरू हुआ?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "ap_duration",
+              "slot": "duration",
+              "text": "How long does the pain last each time?",
+              "hindi_text": "हर बार दर्द कितनी देर तक रहता है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "ap_character",
+              "slot": "character",
+              "text": "Is the pain cramping, burning, or constant?",
+              "hindi_text": "दर्द मरोड़ जैसा, जलन जैसा, या लगातार है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true,
+              "options": [
+                { "id": "ap_ch_cramp", "label": "Cramping", "hindi_label": "मरोड़ जैसा", "value": "cramping" },
+                { "id": "ap_ch_burn", "label": "Burning", "hindi_label": "जलन जैसा", "value": "burning" },
+                { "id": "ap_ch_const", "label": "Constant", "hindi_label": "लगातार", "value": "constant" }
+              ]
+            },
+            {
+              "id": "ap_severity",
+              "slot": "severity",
+              "text": "On a scale of 1 to 10, how severe is the pain?",
+              "hindi_text": "1 से 10 के पैमाने पर, दर्द कितना गंभीर है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "ap_bleeding",
+              "text": "Have you vomited blood or noticed blood in your stool?",
+              "hindi_text": "क्या आपको खून की उल्टी हुई है या मल में खून दिखा है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": false,
+              "priority_when": ["black", "blood", "vomit", "खून", "उल्टी", "10", "9"],
+              "red_flag_triggers": ["rigid abdomen", "blood in stool", "vomiting blood"]
+            },
+            {
+              "id": "ap_bowel",
+              "text": "Has there been any change in your bowel habits or appetite?",
+              "hindi_text": "क्या शौच की आदत या भूख में कोई बदलाव आया है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": false
+            }
+          ]
+        },
+
+        "breathlessness": {
+          "match": ["breath", "breathless", "shortness of breath", "cough", "wheez", "साँस", "सांस", "sans", "खांसी", "khansi"],
+          "red_flag_tokens": ["cannot speak full sentences", "blue lips"],
+          "questions": [
+            {
+              "id": "br_onset",
+              "slot": "onset",
+              "text": "When did the breathing difficulty start?",
+              "hindi_text": "सांस की तकलीफ कब शुरू हुई?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "br_duration",
+              "slot": "duration",
+              "text": "Is it there all the time, or does it come in episodes?",
+              "hindi_text": "यह हर समय रहती है, या दौरों में आती है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "br_character",
+              "slot": "character",
+              "text": "Does your chest feel tight, or do you hear wheezing when you breathe?",
+              "hindi_text": "क्या छाती जकड़ी हुई लगती है, या सांस लेते समय सीटी जैसी आवाज़ आती है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "br_severity",
+              "slot": "severity",
+              "text": "Does the breathlessness happen at rest, or only when you exert yourself?",
+              "hindi_text": "सांस की तकलीफ आराम करते समय होती है, या सिर्फ मेहनत करने पर?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true,
+              "options": [
+                { "id": "br_sev_rest", "label": "Even at rest", "hindi_label": "आराम करते समय भी", "value": "at_rest" },
+                { "id": "br_sev_exert", "label": "Only on exertion", "hindi_label": "सिर्फ मेहनत पर", "value": "on_exertion" }
+              ]
+            },
+            {
+              "id": "br_speech",
+              "text": "Are you able to speak in full sentences right now, and have your lips or fingertips looked blue?",
+              "hindi_text": "क्या आप अभी पूरे वाक्य बोल पा रहे हैं, और क्या आपके होंठ या उँगलियाँ नीली दिखी हैं?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": false,
+              "priority_when": ["rest", "sudden", "cannot", "can't", "आराम", "अचानक"],
+              "red_flag_triggers": ["cannot speak full sentences", "blue lips"]
+            },
+            {
+              "id": "br_cough",
+              "text": "Do you have a cough, and is there any phlegm or blood in it?",
+              "hindi_text": "क्या आपको खांसी है, और उसमें बलगम या खून आता है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": false
+            }
+          ]
+        },
+
+        "fever": {
+          "match": ["fever", "temperature", "chills", "बुखार", "bukhar", "ठंड लगना", "tap"],
+          "red_flag_tokens": [],
+          "questions": [
+            {
+              "id": "fv_onset",
+              "slot": "onset",
+              "text": "When did the fever start?",
+              "hindi_text": "बुखार कब शुरू हुआ?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "fv_duration",
+              "slot": "duration",
+              "text": "How many days have you had the fever?",
+              "hindi_text": "आपको कितने दिनों से बुखार है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "fv_character",
+              "slot": "character",
+              "text": "Is the fever continuous, or does it come and go?",
+              "hindi_text": "बुखार लगातार रहता है, या आता-जाता है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true,
+              "options": [
+                { "id": "fv_ch_cont", "label": "Continuous", "hindi_label": "लगातार", "value": "continuous" },
+                { "id": "fv_ch_inter", "label": "Comes and goes", "hindi_label": "आता-जाता है", "value": "intermittent" }
+              ]
+            },
+            {
+              "id": "fv_severity",
+              "slot": "severity",
+              "text": "How high has your temperature been, and do you get chills?",
+              "hindi_text": "आपका तापमान कितना ऊँचा रहा है, और क्या ठंड लगती है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "fv_associated",
+              "text": "Along with the fever, do you have a cough, loose motions, or burning when you pass urine?",
+              "hindi_text": "बुखार के साथ, क्या आपको खांसी, दस्त, या पेशाब में जलन है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": false
+            },
+            {
+              "id": "fv_rash",
+              "text": "Have you noticed any rash, or severe headache with neck stiffness?",
+              "hindi_text": "क्या आपने कोई चकत्ते देखे हैं, या गर्दन में अकड़न के साथ तेज़ सिरदर्द है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": false,
+              "priority_when": ["rash", "चकत्ते", "neck", "गर्दन"]
+            }
+          ]
+        },
+
+        "general": {
+          "match": [],
+          "red_flag_tokens": [],
+          "questions": [
+            {
+              "id": "gen_onset",
+              "slot": "onset",
+              "text": "When did this problem start?",
+              "hindi_text": "यह समस्या कब शुरू हुई?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "gen_duration",
+              "slot": "duration",
+              "text": "How long has it been going on?",
+              "hindi_text": "यह कितने समय से चल रही है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "gen_character",
+              "slot": "character",
+              "text": "Can you describe what it feels like?",
+              "hindi_text": "क्या आप बता सकते हैं कि यह कैसा महसूस होता है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "gen_severity",
+              "slot": "severity",
+              "text": "On a scale of 1 to 10, how bad is it?",
+              "hindi_text": "1 से 10 के पैमाने पर, यह कितना गंभीर है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": true
+            },
+            {
+              "id": "gen_associated",
+              "text": "Is there anything else you have noticed along with this?",
+              "hindi_text": "इसके साथ आपने कुछ और भी महसूस किया है?",
+              "section_type": "HPI",
+              "input_type": "VOICE_OR_TOUCH",
+              "is_required": false
+            }
+          ]
+        }
+      }
+    },
+
+    "PAST_MEDICAL_HISTORY": {
+      "required_slots": ["pmh_conditions"],
+      "questions": [
+        {
+          "id": "pmh_conditions",
+          "slot": "pmh_conditions",
+          "text": "Do you have any long-term illnesses such as diabetes, blood pressure, asthma, or thyroid problems?",
+          "hindi_text": "क्या आपको कोई पुरानी बीमारी है, जैसे मधुमेह, ब्लड प्रेशर, दमा, या थायरॉइड?",
+          "section_type": "PAST_MEDICAL_HISTORY",
+          "input_type": "VOICE_OR_TOUCH",
+          "is_required": true,
+          "options": [
+            { "id": "pmh_diabetes", "label": "Diabetes", "hindi_label": "मधुमेह", "value": "diabetes" },
+            { "id": "pmh_htn", "label": "High blood pressure", "hindi_label": "ब्लड प्रेशर", "value": "hypertension" },
+            { "id": "pmh_asthma", "label": "Asthma", "hindi_label": "दमा", "value": "asthma" },
+            { "id": "pmh_none", "label": "None of these", "hindi_label": "इनमें से कोई नहीं", "value": "none" }
+          ]
+        },
+        {
+          "id": "pmh_hospital",
+          "text": "Have you ever been admitted to hospital or had an operation?",
+          "hindi_text": "क्या आप कभी अस्पताल में भर्ती हुए हैं या कोई ऑपरेशन हुआ है?",
+          "section_type": "PAST_MEDICAL_HISTORY",
+          "input_type": "VOICE_OR_TOUCH",
+          "is_required": false
+        }
+      ]
+    },
+
+    "MEDICATIONS": {
+      "required_slots": ["med_current"],
+      "questions": [
+        {
+          "id": "med_current",
+          "slot": "med_current",
+          "text": "Which medicines are you taking at present? Please include the dose if you know it.",
+          "hindi_text": "आप अभी कौन-कौन सी दवाइयाँ ले रहे हैं? अगर खुराक पता है तो वह भी बताएं।",
+          "section_type": "MEDICATIONS",
+          "input_type": "VOICE_OR_TOUCH",
+          "is_required": true
+        },
+        {
+          "id": "med_adherence",
+          "text": "Do you ever miss doses, or have you stopped any medicine recently?",
+          "hindi_text": "क्या आप कभी खुराक भूल जाते हैं, या हाल में कोई दवा बंद की है?",
+          "section_type": "MEDICATIONS",
+          "input_type": "VOICE_OR_TOUCH",
+          "is_required": false
+        }
+      ]
+    },
+
+    "ALLERGIES": {
+      "required_slots": ["alg_known"],
+      "questions": [
+        {
+          "id": "alg_known",
+          "slot": "alg_known",
+          "text": "Are you allergic to any medicine or food?",
+          "hindi_text": "क्या आपको किसी दवा या खाने से एलर्जी है?",
+          "section_type": "ALLERGIES",
+          "input_type": "VOICE_OR_TOUCH",
+          "is_required": true,
+          "options": [
+            { "id": "alg_yes", "label": "Yes", "hindi_label": "हाँ", "value": "yes" },
+            { "id": "alg_no", "label": "No", "hindi_label": "नहीं", "value": "no" }
+          ]
+        },
+        {
+          "id": "alg_reaction",
+          "text": "What happens when you take it - rash, swelling, or difficulty breathing?",
+          "hindi_text": "उसे लेने पर क्या होता है - चकत्ते, सूजन, या सांस लेने में तकलीफ?",
+          "section_type": "ALLERGIES",
+          "input_type": "VOICE_OR_TOUCH",
+          "is_required": false,
+          "priority_when": ["yes", "haan", "हाँ", "allerg", "एलर्जी", "penicillin", "sulfa"]
+        }
+      ]
+    },
+
+    "FAMILY_HISTORY": {
+      "required_slots": ["fh_conditions"],
+      "questions": [
+        {
+          "id": "fh_conditions",
+          "slot": "fh_conditions",
+          "text": "Does anyone in your immediate family have heart disease, diabetes, blood pressure, or cancer?",
+          "hindi_text": "क्या आपके परिवार में किसी को हृदय रोग, मधुमेह, ब्लड प्रेशर, या कैंसर है?",
+          "section_type": "FAMILY_HISTORY",
+          "input_type": "VOICE_OR_TOUCH",
+          "is_required": true
+        }
+      ]
+    },
+
+    "PERSONAL_HISTORY": {
+      "required_slots": ["ph_tobacco", "ph_alcohol"],
+      "questions": [
+        {
+          "id": "ph_tobacco",
+          "slot": "ph_tobacco",
+          "text": "Do you smoke or chew tobacco?",
+          "hindi_text": "क्या आप धूम्रपान करते हैं या तंबाकू खाते हैं?",
+          "section_type": "PERSONAL_HISTORY",
+          "input_type": "VOICE_OR_TOUCH",
+          "is_required": true,
+          "options": [
+            { "id": "ph_tob_never", "label": "Never", "hindi_label": "कभी नहीं", "value": "never" },
+            { "id": "ph_tob_current", "label": "Currently", "hindi_label": "अभी करता हूँ", "value": "current" },
+            { "id": "ph_tob_past", "label": "Quit in the past", "hindi_label": "पहले करता था", "value": "former" }
+          ]
+        },
+        {
+          "id": "ph_alcohol",
+          "slot": "ph_alcohol",
+          "text": "Do you drink alcohol? If yes, how often?",
+          "hindi_text": "क्या आप शराब पीते हैं? अगर हाँ, तो कितनी बार?",
+          "section_type": "PERSONAL_HISTORY",
+          "input_type": "VOICE_OR_TOUCH",
+          "is_required": true
+        },
+        {
+          "id": "ph_diet",
+          "text": "How would you describe your usual diet and physical activity?",
+          "hindi_text": "आप अपने खाने-पीने और शारीरिक गतिविधि के बारे में क्या बताएंगे?",
+          "section_type": "PERSONAL_HISTORY",
+          "input_type": "VOICE_OR_TOUCH",
+          "is_required": false
+        }
+      ]
+    },
+
+    "REVIEW_OF_SYSTEMS": {
+      "required_slots": ["ros_general"],
+      "questions": [
+        {
+          "id": "ros_general",
+          "slot": "ros_general",
+          "text": "Apart from what we have discussed, is there anything else troubling you?",
+          "hindi_text": "जो हमने बात की उसके अलावा, कोई और तकलीफ है?",
+          "section_type": "REVIEW_OF_SYSTEMS",
+          "input_type": "VOICE_OR_TOUCH",
+          "is_required": true
+        },
+        {
+          "id": "ros_weight",
+          "text": "Have you had any unexplained weight loss, night sweats, or ongoing tiredness?",
+          "hindi_text": "क्या आपका वजन बिना कारण घटा है, रात में पसीना आता है, या लगातार थकान रहती है?",
+          "section_type": "REVIEW_OF_SYSTEMS",
+          "input_type": "VOICE_OR_TOUCH",
+          "is_required": false
+        }
+      ]
+    }
+  }
+}
