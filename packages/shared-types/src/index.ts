@@ -433,16 +433,61 @@ export interface SummaryModification {
 // Triage
 // ---------------------------------------------------------------------------
 
+export type AlertStatus = 'ACTIVE' | 'ACKNOWLEDGED' | 'ESCALATED' | 'RESOLVED';
+
 export interface TriageAlert {
   id: string;
   patientId: string;
   sessionId: string;
+  sectionType?: string;
   riskLevel: RiskLevel;
   redFlags: RedFlag[];
+  alertStatus: AlertStatus;
+  priorityScore: number;          // 0–100 (EMERGENCY=100)
+  clinicalCategory?: string;      // CARDIAC | NEUROLOGICAL | etc.
+  suggestedAction?: string;       // Protocol-neutral guidance; never diagnostic
+  timeToInterventionMinutes?: number;
   isAcknowledged: boolean;
-  acknowledgedBy?: string;    // Staff profile ID
+  acknowledgedBy?: string;        // Staff profile ID
   acknowledgedAt?: string;
+  resolvedBy?: string;
+  resolvedAt?: string;
+  resolutionNotes?: string;
+  escalatedAt?: string;
+  escalationNotes?: string;
   createdAt: string;
+  updatedAt: string;
+  // Joined patient data (present when fetched via /api/triage/alerts)
+  patient?: {
+    firstName: string;
+    lastName: string;
+    age?: number;
+    gender?: string;
+  };
+}
+
+/**
+ * Structured clinical action guidance produced by the Python TriageClassifier.
+ * Language is protocol-neutral — no hospital-specific emergency codes.
+ */
+export interface TriageClassification {
+  overallSeverity: RiskLevel;
+  priorityScore: number;
+  protocolAction: string;
+  escalationTargets: string[];
+  timeToInterventionMinutes: number;
+  clinicalCategories: string[];
+  flagCount: number;
+  requiresImmediateAttention: boolean;
+}
+
+export interface RedFlag {
+  type: string;
+  description: string;
+  severity: RiskLevel;
+  category?: string;
+  triggeredBy: string[];
+  requiresImmediateAttention: boolean;
 }
 
 // ---------------------------------------------------------------------------
