@@ -194,6 +194,9 @@ export interface Medication {
   prescribedBy?: string;
   isCurrentlyTaking: boolean;
   sourceDocumentId?: string;
+  pageNumber?: number;
+  answerId?: string;
+  sourceType?: 'document' | 'conversation';
 }
 
 export interface Allergy {
@@ -202,6 +205,9 @@ export interface Allergy {
   reaction?: string;
   severity?: 'MILD' | 'MODERATE' | 'SEVERE' | 'ANAPHYLAXIS';
   sourceDocumentId?: string;
+  pageNumber?: number;
+  answerId?: string;
+  sourceType?: 'document' | 'conversation';
 }
 
 export interface FamilyHistory {
@@ -267,6 +273,9 @@ export interface Investigation {
   isAbnormal?: boolean;
   notes?: string;
   sourceDocumentId?: string;
+  pageNumber?: number;
+  answerId?: string;
+  sourceType?: 'document' | 'conversation';
   extractedByAI: boolean;
   confidence?: number;        // AI extraction confidence 0–1
 }
@@ -580,4 +589,22 @@ export interface QuestionOption {
   hindiLabel?: string;
   value: string;
   emoji?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Aggregated Context (for Summary Generation)
+// ---------------------------------------------------------------------------
+
+export interface AggregatedClinicalContext {
+  patientId: string;
+  sessionId: string;
+  patient?: Patient;
+  historyAnswers: HistoryAnswer[];
+  medications: Medication[];
+  investigations: Investigation[];
+  allergies: Allergy[];
+  extractedEntities: ExtractedEntity[];
+  timelineEvents: TimelineEvent[];
+  triageAlerts?: TriageAlert[];
+  redFlags: RedFlag[];
 }

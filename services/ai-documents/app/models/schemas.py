@@ -44,6 +44,8 @@ class ExtractedMedication(BaseModel):
     route: Optional[str] = None
     is_currently_taking: bool = True
     confidence: float = Field(..., ge=0.0, le=1.0)
+    source_document_id: Optional[str] = None
+    page_number: Optional[int] = None
 
 
 class ExtractedInvestigation(BaseModel):
@@ -55,6 +57,8 @@ class ExtractedInvestigation(BaseModel):
     test_date: Optional[str] = None
     is_abnormal: Optional[bool] = None
     confidence: float = Field(..., ge=0.0, le=1.0)
+    source_document_id: Optional[str] = None
+    page_number: Optional[int] = None
 
 
 class ExtractedAllergy(BaseModel):
@@ -62,6 +66,8 @@ class ExtractedAllergy(BaseModel):
     reaction: Optional[str] = None
     severity: Optional[str] = None
     confidence: float = Field(..., ge=0.0, le=1.0)
+    source_document_id: Optional[str] = None
+    page_number: Optional[int] = None
 
 
 class ExtractedEntity(BaseModel):

@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(git --version)",
+      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --turbopack --yes)",
+      "Bash(npm install *)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(npx --yes shadcn@latest init -d --yes)",
+      "Bash(npx --yes shadcn@latest add card input label textarea select dialog badge progress separator tabs checkbox radio-group alert scroll-area table sonner skeleton accordion switch tooltip avatar --yes --overwrite)",
+      "Bash(node -e \"const p=require\\('./package.json'\\);console.log\\(Object.keys\\(p.dependencies\\).length+' deps'\\)\")",
+      "Bash(awk '{printf \"%8.1f KB  %s\\\\n\", $5/1024, $9}')",
+      "Bash(grep -n \"<h1\\\\|<h2\\\\|<h3\\\\|{/\\\\* [0-9]\" studio_components/LandingPage.tsx)",
+      "Bash(npm run *)",
+      "Bash(sort -t: -k2 -rn)",
+      "Bash(node -e ' *)",
+      "Bash(grep -v \":0$\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\);console.log\\('deps:',Object.keys\\(p.dependencies||{}\\).join\\(', '\\)\\);console.log\\(\\);console.log\\('devDeps:',Object.keys\\(p.devDependencies||{}\\).join\\(', '\\)\\);console.log\\(\\);console.log\\('scripts:',JSON.stringify\\(p.scripts,null,2\\)\\)\")",
+      "Bash(node -e *)",
+      "Bash(git checkout *)"
+    ]
+  }
+}
