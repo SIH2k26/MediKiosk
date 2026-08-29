@@ -141,7 +141,24 @@ class RedFlag(BaseModel):
     type: str
     description: str
     severity: RiskLevel
+    category: Optional[str] = None   # CARDIAC | NEUROLOGICAL | ABDOMINAL | PSYCHIATRIC | etc.
     triggered_by: List[str]
+    requires_immediate_attention: bool
+
+
+class TriageClassification(BaseModel):
+    """Structured clinical action guidance produced by TriageClassifier.
+
+    Language is protocol-neutral — no hospital-specific codes.
+    Intended for display to trained triage staff, not automated ordering.
+    """
+    overall_severity: RiskLevel
+    priority_score: int                     # 0–100; stored in DB for sort ordering
+    protocol_action: str                    # generic action guidance
+    escalation_targets: List[str]           # which teams to contact
+    time_to_intervention_minutes: int
+    clinical_categories: List[str]          # distinct categories from triggered flags
+    flag_count: int
     requires_immediate_attention: bool
 
 
@@ -171,6 +188,7 @@ class ProcessHistoryResponse(BaseModel):
     hpi: Optional[HPIStructured] = None
     red_flags: List[RedFlag] = []
     risk_level: RiskLevel = RiskLevel.NORMAL
+    triage_classification: Optional[TriageClassification] = None
     narrative: Optional[str] = None
     processing_duration_ms: int
     model_used: Optional[str] = None

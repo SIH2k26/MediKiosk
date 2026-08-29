@@ -15,14 +15,17 @@ from app.models.schemas import (
     ProcessHistoryResponse,
     RedFlag,
     RiskLevel,
+    TriageClassification,
     highest_risk,
 )
 from app.pipelines.extraction import ExtractionPipeline
 from app.rules.red_flags import RedFlagEngine, RedFlagResult
+from app.rules.triage_rules import TriageClassifier
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 red_flag_engine = RedFlagEngine()
+triage_classifier = TriageClassifier()
 
 
 def _symptom_phrases(extraction: ExtractionResult) -> List[str]:
@@ -84,6 +87,7 @@ def _to_red_flag(result: RedFlagResult) -> RedFlag:
         type=result.type,
         description=result.description,
         severity=RiskLevel(result.severity),
+        category=result.category,
         triggered_by=list(result.triggered_by),
         requires_immediate_attention=bool(result.requires_immediate_attention),
     )
@@ -173,6 +177,14 @@ async def process_history(request: ProcessHistoryRequest) -> ProcessHistoryRespo
             risk_level.value,
         )
 
+    # 3. Triage classification — deterministic mapping of flags → clinical actions.
+    #    Returns None when risk_level is NORMAL and no flags fired, to keep the
+    #    response payload lean for the common (no-flag) case.
+    triage_classification: TriageClassification | None = triage_classifier.classify(
+        flags=flags,
+        overall_severity=risk_level.value,
+    )
+
     return ProcessHistoryResponse(
         session_id=request.session_id,
         section_type=request.section_type,
@@ -183,6 +195,7 @@ async def process_history(request: ProcessHistoryRequest) -> ProcessHistoryRespo
         hpi=extraction.hpi if extraction else None,
         red_flags=red_flags,
         risk_level=risk_level,
+        triage_classification=triage_classification,
         narrative=extraction.narrative if extraction else None,
         processing_duration_ms=int(time.time() * 1000) - start_ms,
         model_used=model_used,
