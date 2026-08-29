@@ -10,6 +10,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@medikiosk/shared-types": "workspace:*",
     "@supabase/supabase-js": "^2.47.2",
     "next": "16.3.2",
     "react": "19.2.8",

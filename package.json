@@ -4,7 +4,8 @@
   "private": true,
   "description": "AI-Powered Clinical History & Patient Intake Platform",
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "pnpm -r --parallel run dev",
+    "dev:turbo": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
