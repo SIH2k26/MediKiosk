@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+// @ts-ignore - Temporary bypass for missing workspace linking in DEV environment
 import { CreatePatient, CreateConsent } from '@medikiosk/clinical-schema';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
