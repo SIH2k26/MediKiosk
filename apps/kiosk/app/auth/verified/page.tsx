@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
-import '../../../globals.css';
+import '../../globals.css';
 
 function VerifiedContent() {
   const params    = useSearchParams();

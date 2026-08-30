@@ -21,6 +21,42 @@ import {
 } from './triage.types';
 import { HttpError } from '../../middleware/errorHandler';
 
+function formatAlertRow(row: any): any {
+  if (!row) return row;
+  const patient = row.patient
+    ? {
+        ...row.patient,
+        firstName: row.patient.first_name ?? row.patient.firstName ?? 'Walk-in',
+        lastName: row.patient.last_name ?? row.patient.lastName ?? 'Patient',
+      }
+    : null;
+
+  return {
+    ...row,
+    patientId: row.patient_id ?? row.patientId,
+    sessionId: row.session_id ?? row.sessionId,
+    riskLevel: row.risk_level ?? row.riskLevel,
+    redFlags: row.red_flags ?? row.redFlags ?? [],
+    isAcknowledged: row.is_acknowledged ?? row.isAcknowledged ?? false,
+    acknowledgedBy: row.acknowledged_by ?? row.acknowledgedBy,
+    acknowledgedAt: row.acknowledged_at ?? row.acknowledgedAt,
+    createdAt: row.created_at ?? row.createdAt,
+    updatedAt: row.updated_at ?? row.updatedAt,
+    alertStatus: row.alert_status ?? row.alertStatus ?? 'ACTIVE',
+    resolvedBy: row.resolved_by ?? row.resolvedBy,
+    resolvedAt: row.resolved_at ?? row.resolvedAt,
+    resolutionNotes: row.resolution_notes ?? row.resolutionNotes,
+    escalatedAt: row.escalated_at ?? row.escalatedAt,
+    escalationNotes: row.escalation_notes ?? row.escalationNotes,
+    priorityScore: row.priority_score ?? row.priorityScore ?? 0,
+    clinicalCategory: row.clinical_category ?? row.clinicalCategory,
+    suggestedAction: row.suggested_action ?? row.suggestedAction,
+    timeToInterventionMinutes: row.time_to_intervention_minutes ?? row.timeToInterventionMinutes,
+    sectionType: row.section_type ?? row.sectionType,
+    patient,
+  };
+}
+
 export class TriageService {
   private get db() {
     return createSupabaseServiceClient();
@@ -33,36 +69,76 @@ export class TriageService {
   // throwing. The unique index in migration 002 enforces this at the DB level.
   // -------------------------------------------------------------------------
   async createAlert(dto: CreateTriageAlertDto): Promise<TriageAlertRow> {
+    // 1. Ensure parent patient record exists to satisfy FK constraint
+    await this.db.from('patients').upsert(
+      {
+        id: dto.patient_id,
+        first_name: 'Walk-in',
+        last_name: 'Patient',
+        is_anonymous: true,
+      },
+      { onConflict: 'id', ignoreDuplicates: true }
+    );
+
+    // 2. Ensure parent patient_session record exists to satisfy FK constraint
+    await this.db.from('patient_sessions').upsert(
+      {
+        id: dto.session_id,
+        patient_id: dto.patient_id,
+        status: 'ACTIVE',
+      },
+      { onConflict: 'id', ignoreDuplicates: true }
+    );
+
+    // 3. Insert the alert row into triage_alerts
+    const alertData = {
+      patient_id: dto.patient_id,
+      session_id: dto.session_id,
+      section_type: dto.section_type,
+      risk_level: dto.risk_level,
+      red_flags: dto.red_flags,
+      alert_status: 'ACTIVE',
+      is_acknowledged: false,
+      priority_score: dto.priority_score,
+      clinical_category: dto.clinical_category ?? null,
+      suggested_action: dto.suggested_action ?? null,
+      time_to_intervention_minutes: dto.time_to_intervention_minutes ?? null,
+    };
+
     const { data, error } = await this.db
       .from('triage_alerts')
-      .upsert(
-        {
-          patient_id: dto.patient_id,
-          session_id: dto.session_id,
-          section_type: dto.section_type,
-          risk_level: dto.risk_level,
-          red_flags: dto.red_flags,
-          alert_status: 'ACTIVE',
-          is_acknowledged: false,
-          priority_score: dto.priority_score,
-          clinical_category: dto.clinical_category ?? null,
-          suggested_action: dto.suggested_action ?? null,
-          time_to_intervention_minutes: dto.time_to_intervention_minutes ?? null,
-        },
-        {
-          // ON CONFLICT (session_id, section_type) WHERE alert_status IN ('ACTIVE','ACKNOWLEDGED')
-          // Update only the priority/flags in case a retry brings a higher-severity result.
-          onConflict: 'session_id,section_type',
-          ignoreDuplicates: false,
-        }
-      )
-      .select()
+      .insert(alertData)
+      .select(`*, patient:patients(first_name, last_name, age, gender)`)
       .single();
 
     if (error) {
+      // 4. Gracefully handle unique constraint duplicate (error 23505): update existing active alert
+      if (error.code === '23505') {
+        const { data: updated } = await this.db
+          .from('triage_alerts')
+          .update({
+            risk_level: dto.risk_level,
+            red_flags: dto.red_flags,
+            priority_score: dto.priority_score,
+            clinical_category: dto.clinical_category ?? null,
+            suggested_action: dto.suggested_action ?? null,
+            time_to_intervention_minutes: dto.time_to_intervention_minutes ?? null,
+          })
+          .eq('session_id', dto.session_id)
+          .eq('section_type', dto.section_type)
+          .in('alert_status', ['ACTIVE', 'ACKNOWLEDGED'])
+          .select(`*, patient:patients(first_name, last_name, age, gender)`)
+          .single();
+
+        if (updated) {
+          return formatAlertRow(updated) as TriageAlertRow;
+        }
+      }
+      console.error('[TriageService] Error inserting triage alert into database:', error);
       throw new HttpError(500, 'TRIAGE_CREATE_FAILED', error.message);
     }
-    return data as TriageAlertRow;
+
+    return formatAlertRow(data) as TriageAlertRow;
   }
 
   // -------------------------------------------------------------------------
@@ -96,7 +172,8 @@ export class TriageService {
     const { data, error, count } = await query;
     if (error) throw new HttpError(500, 'TRIAGE_FETCH_FAILED', error.message);
 
-    return { items: (data ?? []) as TriageAlertRow[], total: count ?? 0 };
+    const items = (data ?? []).map(formatAlertRow) as TriageAlertRow[];
+    return { items, total: count ?? 0 };
   }
 
   // -------------------------------------------------------------------------
@@ -115,7 +192,7 @@ export class TriageService {
       .single();
 
     if (error || !data) throw new HttpError(404, 'TRIAGE_NOT_FOUND', 'Triage alert not found');
-    return data as TriageAlertRow;
+    return formatAlertRow(data) as TriageAlertRow;
   }
 
   // -------------------------------------------------------------------------

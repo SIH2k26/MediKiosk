@@ -8,7 +8,7 @@ let _serviceClient: SupabaseClient | null = null;
  * Call this when you need to make requests on behalf of the authenticated user.
  */
 export function createSupabaseServerClient(): SupabaseClient {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
@@ -27,7 +27,7 @@ export function createSupabaseServerClient(): SupabaseClient {
  * NEVER expose to client-side code.
  */
 export function createSupabaseServiceClient(): SupabaseClient {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !serviceKey) {

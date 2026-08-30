@@ -144,6 +144,7 @@ historyRouter.post(
           });
 
           triageAlertId = alert.id;
+          console.log('[HistoryRouter] Triage alert created successfully in DB:', alert.id, 'for patient:', validPatientId);
 
           // Fire-and-forget audit log
           if (authReq.userId) {

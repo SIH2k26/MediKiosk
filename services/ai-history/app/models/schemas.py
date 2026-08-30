@@ -78,10 +78,10 @@ def highest_risk(levels: Any) -> "RiskLevel":
 
 
 class HistoryAnswerInput(BaseModel):
-    question_id: str
-    question_text: str
-    answer_type: AnswerType
-    raw_answer: str
+    question_id: str = "q_1"
+    question_text: str = "Clinical Question"
+    answer_type: AnswerType = AnswerType.TEXT
+    raw_answer: str = ""
     audio_url: Optional[str] = None
     confidence: Optional[float] = Field(None, ge=0.0, le=1.0)
     section_type: Optional[str] = None
