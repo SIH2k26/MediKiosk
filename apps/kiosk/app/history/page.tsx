@@ -11,7 +11,11 @@ const globalProcessedSections = new Set<string>();
 export default function HistoryPage() {
   const router = useRouter();
   
-  const [session] = useState({ id: 'sess_' + Date.now(), patientId: 'p_123', lang: 'en' });
+  const [session] = useState(() => ({
+    id: typeof window !== 'undefined' && window.crypto?.randomUUID ? window.crypto.randomUUID() : '00000000-0000-0000-0000-000000000002',
+    patientId: '00000000-0000-0000-0000-000000000001',
+    lang: 'en'
+  }));
   const [currentSection, setCurrentSection] = useState('CHIEF_COMPLAINT');
   const [question, setQuestion] = useState<any>(null);
   const [answers, setAnswers] = useState<any[]>([]);

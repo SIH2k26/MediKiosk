@@ -218,6 +218,11 @@ def test_pediatric_emergency_category():
         assert matching[0].category == "PEDIATRIC"
         assert matching[0].severity == "EMERGENCY"
 
+def test_head_injury_trauma():
+    engine = RedFlagEngine()
+    flags = engine.evaluate(["I had a severe head injury after falling."], "HPI")
+    assert any(f.type == "HEAD_INJURY_TRAUMA" for f in flags)
+
 # =============================================================================
 # NEW: category field present on all flags
 # =============================================================================

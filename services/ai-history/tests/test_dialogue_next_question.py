@@ -31,10 +31,10 @@ async def test_dialogue_flow():
     
     # Transition to HPI
     req.section_type = HistorySectionType.HPI
-    req.chief_complaint = 'chest pain'
+    req.chief_complaint = 'fatigue'
     req.answered_question_ids = []
     
-    expected_hpi = question_ids("HPI", "chest_pain")
+    expected_hpi = question_ids("HPI", "general")
     for qid in expected_hpi:
         res = await dm.get_next_question(req)
         assert not res.section_complete
@@ -77,3 +77,28 @@ async def test_dialogue_unknown_complaint_fallback():
     res = await dm.get_next_question(req)
     assert not res.section_complete
     assert res.question.id == expected_gen[0]
+
+
+@pytest.mark.asyncio
+async def test_emergency_red_flag_halts_dialogue():
+    """Verifies that an emergency complaint like 'I am having a heart attack' immediately halts dialogue."""
+    dm = DialogueManager()
+    req = DialogueStateRequest(
+        session_id='123',
+        section_type=HistorySectionType.HPI,
+        language='en',
+        chief_complaint='I am having a heart attack',
+        answered_question_ids=[],
+        collected_answers=[
+            {
+                "question_id": "hpi_onset",
+                "answer_type": "TEXT",
+                "raw_answer": "I am having a heart attack right now"
+            }
+        ]
+    )
+    
+    res = await dm.get_next_question(req)
+    assert res.section_complete is True
+    assert res.question is None
+

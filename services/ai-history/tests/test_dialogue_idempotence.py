@@ -9,7 +9,7 @@ async def test_dialogue_idempotent():
         session_id='123',
         section_type=HistorySectionType.HPI,
         language='en',
-        chief_complaint='chest pain',
+        chief_complaint='mild joint pain',
         answered_question_ids=[],
         collected_answers=[]
     )

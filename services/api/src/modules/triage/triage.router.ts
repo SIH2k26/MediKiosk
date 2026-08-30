@@ -52,6 +52,7 @@ function requireInternalSecret(req: Request, _res: Response, next: NextFunction)
  */
 triageRouter.get(
   '/alerts',
+  requireAuth,
   requireRole(['DOCTOR', 'TRIAGE_STAFF', 'ADMIN']),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -111,6 +112,7 @@ triageRouter.post(
 // ── GET /api/triage/alerts/:id ───────────────────────────────────────────────
 triageRouter.get(
   '/alerts/:id',
+  requireAuth,
   requireRole(['DOCTOR', 'TRIAGE_STAFF', 'ADMIN']),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -125,6 +127,7 @@ triageRouter.get(
 // ── POST /api/triage/alerts/:id/acknowledge ──────────────────────────────────
 triageRouter.post(
   '/alerts/:id/acknowledge',
+  requireAuth,
   requireRole(['DOCTOR', 'TRIAGE_STAFF']),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -155,6 +158,7 @@ triageRouter.post(
 // ── POST /api/triage/alerts/:id/resolve ──────────────────────────────────────
 triageRouter.post(
   '/alerts/:id/resolve',
+  requireAuth,
   requireRole(['DOCTOR', 'TRIAGE_STAFF']),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -192,6 +196,7 @@ triageRouter.post(
 // ── POST /api/triage/alerts/:id/escalate ─────────────────────────────────────
 triageRouter.post(
   '/alerts/:id/escalate',
+  requireAuth,
   requireRole(['DOCTOR', 'TRIAGE_STAFF']),
   async (req: Request, res: Response, next: NextFunction) => {
     try {

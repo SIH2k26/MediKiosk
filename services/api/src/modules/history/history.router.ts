@@ -9,7 +9,7 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
-import { requireAuth } from '../../middleware/auth';
+import { requireAuth, optionalAuth } from '../../middleware/auth';
 import { AuthRequest } from '../../middleware/auth';
 import { HttpError } from '../../middleware/errorHandler';
 import { triageService } from '../triage/triage.service';
@@ -87,7 +87,7 @@ historyRouter.get('/:patientId', requireAuth, async (_req: Request, res: Respons
  */
 historyRouter.post(
   '/sessions/:id/process',
-  requireAuth,
+  optionalAuth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authReq = req as AuthRequest;
@@ -124,12 +124,16 @@ historyRouter.post(
       // ── 2. Create triage alert if risk >= WARNING ──────────────────────────
       let triageAlertId: string | null = null;
 
+      const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const validPatientId = UUID_REGEX.test(body.patient_id) ? body.patient_id : '00000000-0000-0000-0000-000000000001';
+      const validSessionId = UUID_REGEX.test(sessionId) ? sessionId : '00000000-0000-0000-0000-000000000002';
+
       if (ALERT_RISK_LEVELS.includes(riskLevel)) {
         try {
           const triage = aiResult.triage_classification;
           const alert = await triageService.createAlert({
-            patient_id: body.patient_id,
-            session_id: sessionId,
+            patient_id: validPatientId,
+            session_id: validSessionId,
             section_type: body.section_type,
             risk_level: riskLevel,
             red_flags: aiResult.red_flags ?? [],

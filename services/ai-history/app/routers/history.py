@@ -180,10 +180,22 @@ async def process_history(request: ProcessHistoryRequest) -> ProcessHistoryRespo
     # 3. Triage classification — deterministic mapping of flags → clinical actions.
     #    Returns None when risk_level is NORMAL and no flags fired, to keep the
     #    response payload lean for the common (no-flag) case.
-    triage_classification: TriageClassification | None = triage_classifier.classify(
+    triage_res = triage_classifier.classify(
         flags=flags,
         overall_severity=risk_level.value,
     )
+    triage_classification: TriageClassification | None = None
+    if triage_res is not None:
+        triage_classification = TriageClassification(
+            overall_severity=RiskLevel(triage_res.overall_severity),
+            priority_score=triage_res.priority_score,
+            protocol_action=triage_res.protocol_action,
+            escalation_targets=triage_res.escalation_targets,
+            time_to_intervention_minutes=triage_res.time_to_intervention_minutes,
+            clinical_categories=triage_res.clinical_categories,
+            flag_count=triage_res.flag_count,
+            requires_immediate_attention=triage_res.requires_immediate_attention,
+        )
 
     return ProcessHistoryResponse(
         session_id=request.session_id,

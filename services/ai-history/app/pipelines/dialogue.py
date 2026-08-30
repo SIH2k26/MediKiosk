@@ -7,18 +7,40 @@ from app.models.schemas import DialogueStateRequest, NextQuestionResponse, Clini
 from app.ontology import clinical_ontology
 from app.clients.llm import LLMClient, LLMUnavailableError
 
+from app.rules.red_flags import RedFlagEngine
+
 logger = logging.getLogger(__name__)
 
 class NextQuestionPick(BaseModel):
     next_question_id: Optional[str]
 
 class DialogueManager:
+    def __init__(self):
+        self.red_flag_engine = RedFlagEngine()
+
     async def get_next_question(self, request: DialogueStateRequest) -> NextQuestionResponse:
         section = request.section_type.value
         
         if not clinical_ontology.is_known_section(section):
             return self._complete_section(section)
-            
+
+        # 0. Emergency Red-Flag Halt Guard
+        # If answers collected in this section (or chief complaint for CHIEF_COMPLAINT/HPI) trigger
+        # an EMERGENCY or HIGH_PRIORITY red flag, halt questioning immediately.
+        answers_to_eval = [str(a.get("raw_answer", "")) for a in request.collected_answers if a.get("raw_answer")]
+        if section in ("CHIEF_COMPLAINT", "HPI") and request.chief_complaint:
+            answers_to_eval.append(request.chief_complaint)
+
+        if answers_to_eval:
+            flags = self.red_flag_engine.evaluate(answers_to_eval, section)
+            emergency_flags = [f for f in flags if f.severity in ("EMERGENCY", "HIGH_PRIORITY")]
+            if emergency_flags:
+                logger.warning(
+                    f"🚨 Emergency red flag(s) detected during dialogue: {[f.type for f in emergency_flags]}. "
+                    f"Halting questions for section {section}."
+                )
+                return self._complete_section(section)
+
         answered = set(request.answered_question_ids)
         
         module = None

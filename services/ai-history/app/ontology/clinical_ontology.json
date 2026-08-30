@@ -240,7 +240,7 @@
         },
 
         "breathlessness": {
-          "match": ["breath", "breathless", "shortness of breath", "cough", "wheez", "साँस", "सांस", "sans", "खांसी", "khansi"],
+          "match": ["breath", "breathe", "struggling to breathe", "breathless", "shortness of breath", "cough", "wheez", "साँस", "सांस", "sans", "खांसी", "khansi"],
           "red_flag_tokens": ["cannot speak full sentences", "blue lips"],
           "questions": [
             {
