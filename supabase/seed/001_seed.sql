@@ -21,6 +21,21 @@ DECLARE
 BEGIN
 
   -- ---------------------------------------------------------------------
+  -- Staff Auth Users (ensures FK constraint on profiles.user_id is satisfied)
+  -- ---------------------------------------------------------------------
+  BEGIN
+    INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, role, aud)
+    VALUES
+      (doctor_auth_id, '00000000-0000-0000-0000-000000000000', 'doctor@medikiosk.dev', '', NOW(), '{"provider":"email","providers":["email"]}', '{"full_name":"Dr. Priya Sharma"}', NOW(), NOW(), 'authenticated', 'authenticated'),
+      (triage_auth_id, '00000000-0000-0000-0000-000000000000', 'triage@medikiosk.dev', '', NOW(), '{"provider":"email","providers":["email"]}', '{"full_name":"Nurse Rahul Kumar"}', NOW(), NOW(), 'authenticated', 'authenticated'),
+      (admin_auth_id, '00000000-0000-0000-0000-000000000000', 'admin@medikiosk.dev', '', NOW(), '{"provider":"email","providers":["email"]}', '{"full_name":"System Admin"}', NOW(), NOW(), 'authenticated', 'authenticated')
+    ON CONFLICT (id) DO NOTHING;
+  EXCEPTION WHEN OTHERS THEN
+    -- In standalone Postgres test setups without auth schema, proceed gracefully
+    NULL;
+  END;
+
+  -- ---------------------------------------------------------------------
   -- Staff User Profiles
   -- ---------------------------------------------------------------------
   INSERT INTO profiles (id, user_id, role, full_name, email, phone)
