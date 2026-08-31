@@ -3,15 +3,41 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../lib/api-client';
+import { speak, stopSpeaking } from '../../lib/i18n';
+
+interface ConsentDoc {
+  version: string;
+  language: string;
+  title: string;
+  body: string;
+  audioUrl?: string;
+}
+
+// Local fallback when the API is unreachable (kiosk resilience)
+const FALLBACK_CONSENT: Record<string, ConsentDoc> = {
+  en: {
+    version: '1.0',
+    language: 'en',
+    title: 'Consent Form',
+    body: 'MediKiosk collects your symptoms and digitizes your medical documents to generate a structured clinical draft history. All AI output is a draft reviewed by your physician — it is NOT an autonomous diagnosis. You may withdraw consent at any time by informing hospital staff.',
+  },
+  hi: {
+    version: '1.0',
+    language: 'hi',
+    title: 'सहमति पत्र',
+    body: 'मेडिकियॉस्क आपकी बीमारी के लक्षण और आपके मेडिकल दस्तावेजों को डिजिटल रूप में एकत्रित करता है। AI द्वारा बनाई गई रिपोर्ट केवल एक ड्राफ्ट है जिसे आपके डॉक्टर जांचेंगे — यह कोई अंतिम निदान नहीं है। आप किसी भी समय अपनी सहमति वापस ले सकते हैं।',
+  },
+};
 
 export default function ConsentPage() {
   const router = useRouter();
-  
+
   // Local state
   const [language, setLanguage] = useState('hi');
   const [patient, setPatient] = useState<any | null>(null);
   const [session, setSession] = useState<any | null>(null);
-  
+  const [consentDoc, setConsentDoc] = useState<ConsentDoc | null>(null);
+
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,37 +51,59 @@ export default function ConsentPage() {
     try {
       const storedPatient = sessionStorage.getItem('mk_patient');
       const storedSession = sessionStorage.getItem('mk_session');
-      
+
       if (storedPatient && storedSession) {
         setPatient(JSON.parse(storedPatient));
         setSession(JSON.parse(storedSession));
       } else {
         // Missing session flow — redirect to language screen
         router.push('/');
+        return;
       }
     } catch {
       router.push('/');
+      return;
     }
+
+    // Load the active versioned consent document for the patient's language
+    api
+      .getActiveConsentVersion(lang)
+      .then(setConsentDoc)
+      .catch(() => setConsentDoc(FALLBACK_CONSENT[lang] || FALLBACK_CONSENT.en));
+
+    return () => stopSpeaking();
   }, [router]);
 
   const translate = (en: string, hi: string) => {
     return language === 'hi' ? hi : en;
   };
 
+  const toggleAudio = () => {
+    if (isAudioPlaying) {
+      stopSpeaking();
+      setIsAudioPlaying(false);
+    } else if (consentDoc) {
+      // Audio consent explanation for low-literacy patients
+      speak(`${consentDoc.title}. ${consentDoc.body}`, language);
+      setIsAudioPlaying(true);
+    }
+  };
+
   const handleGrantConsent = async () => {
-    if (!isChecked || !patient || !session) return;
+    if (!isChecked || !patient || !session || !consentDoc) return;
     setIsLoading(true);
     setErrorMsg(null);
+    stopSpeaking();
 
     try {
-      // Record consent in DB
+      // Record consent in DB against the exact document version shown
       await api.submitConsent({
         patientId: patient.id,
         sessionId: session.id,
-        consentVersion: '1.0',
+        consentVersion: consentDoc.version,
       });
 
-      // Proceed to conversational interview
+      // Proceed to clinical history interview
       router.push('/history');
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to submit consent. Please try again.');
@@ -63,8 +111,22 @@ export default function ConsentPage() {
     }
   };
 
-  const handleDecline = () => {
-    // Clear storage and return to language selection
+  const handleDecline = async () => {
+    setIsLoading(true);
+    stopSpeaking();
+    try {
+      // Record the explicit rejection for the audit trail
+      if (patient && session && consentDoc) {
+        await api.declineConsent({
+          patientId: patient.id,
+          sessionId: session.id,
+          consentVersion: consentDoc.version,
+        });
+        await api.abandonSession(session.id).catch(() => undefined);
+      }
+    } catch {
+      // Non-blocking — always reset the kiosk
+    }
     sessionStorage.clear();
     router.push('/');
   };
@@ -117,15 +179,16 @@ export default function ConsentPage() {
         )}
 
         <div className="card fade-in-up">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h1 className="text-heading">
-              {translate('Consent Form', 'सहमति पत्र')}
+              {consentDoc?.title || translate('Consent Form', 'सहमति पत्र')}
             </h1>
-            
+
             {/* Audio Explanation Button (for low literacy) */}
             <button
-              onClick={() => setIsAudioPlaying(!isAudioPlaying)}
+              onClick={toggleAudio}
               className="btn btn-secondary"
+              disabled={!consentDoc}
               style={{
                 minHeight: '48px',
                 borderRadius: 'var(--radius-full)',
@@ -139,34 +202,12 @@ export default function ConsentPage() {
             </button>
           </div>
 
-          {/* Audio mock player notification */}
-          {isAudioPlaying && (
-            <div
-              className="fade-in-up"
-              style={{
-                background: 'rgba(26,115,232,0.1)',
-                border: '1px solid var(--color-primary)',
-                borderRadius: 'var(--radius-md)',
-                padding: '0.75rem',
-                fontSize: '0.85rem',
-                color: 'var(--color-text-secondary)',
-                marginBottom: '1.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}
-            >
-              <span>🔊</span>
-              <span>
-                {translate(
-                  '[Mock Audio Playing: Explaining how MediKiosk records symptoms, uploads documents, processes data using AI, and presents it to your doctor...]',
-                  '[मॉक ऑडियो चल रहा है: कियोस्क आपकी बीमारी, अपलोड किए गए दस्तावेजों को सुरक्षित रखकर, डॉ. को दिखाने के बारे में समझा रहा है...]'
-                )}
-              </span>
-            </div>
-          )}
+          {/* Version indicator (auditability) */}
+          <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '1.25rem' }}>
+            {translate('Document version', 'दस्तावेज़ संस्करण')}: {consentDoc?.version || '…'}
+          </p>
 
-          {/* Consent Text */}
+          {/* Consent Text (versioned, fetched per language) */}
           <div
             className="text-body text-secondary"
             style={{
@@ -179,56 +220,10 @@ export default function ConsentPage() {
               marginBottom: '2rem',
               fontSize: '1rem',
               lineHeight: 1.7,
+              whiteSpace: 'pre-line',
             }}
           >
-            <p style={{ marginBottom: '1rem' }}>
-              <strong>
-                {translate(
-                  '1. Purpose of Collection:',
-                  '1. जानकारी संग्रह का उद्देश्य:'
-                )}
-              </strong>
-              <br />
-              {translate(
-                'MediKiosk collects your symptoms and digitizes your medical documents to generate a structured clinical draft history. This helps the hospital reduce consultation queue wait times.',
-                'मेडिकियॉस्क आपकी बीमारी के लक्षण और आपके पुराने मेडिकल दस्तावेजों को स्कैन करके डिजिटल रूप में एकत्रित करता है। इसका मुख्य उद्देश्य डॉक्टर के कमरे में आपके समय की बचत करना है।'
-              )}
-            </p>
-
-            <p style={{ marginBottom: '1rem' }}>
-              <strong>
-                {translate(
-                  '2. Artificial Intelligence Processing:',
-                  '2. आर्टिफिशियल इंटेलिजेंस (AI) प्रोसेसिंग:'
-                )}
-              </strong>
-              <br />
-              {translate(
-                'Our clinical AI service extracts medical text from your uploads and transcribes your voice recordings. The AI will formulate a chronological medical timeline for physician review.',
-                'हमारा AI सिस्टम आपके स्कैन किए गए पर्चे, जांच रिपोर्ट और आपके द्वारा बोली गई बातों का अनुवाद करके एक संक्षिप्त विवरण (SOAP समरी) तैयार करेगा।'
-              )}
-            </p>
-
-            <p style={{ marginBottom: '1.5rem' }}>
-              <strong>
-                {translate(
-                  '3. Human Verification & Control:',
-                  '3. डॉक्टर द्वारा जांच और नियंत्रण:'
-                )}
-              </strong>
-              <br />
-              {translate(
-                'All AI output is treated as a clinical draft. It is NOT an autonomous medical diagnosis. Your consulting physician will review, edit, and confirm all details before adding them to your official EHR.',
-                'AI द्वारा बनाई गई रिपोर्ट केवल एक ड्राफ्ट/प्रारूप है। यह कोई अंतिम मेडिकल जांच या इलाज का पर्चा नहीं है। आपके डॉक्टर इस रिपोर्ट को पढ़कर, बदल कर और सत्यापित करके ही आपके मुख्य हॉस्पिटल रिकॉर्ड में शामिल करेंगे।'
-              )}
-            </p>
-
-            <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-              {translate(
-                'By checking the box below, you grant permission to MediKiosk to store and process your intake parameters.',
-                'नीचे दिए गए बॉक्स को चुनकर आप मेडिकियॉस्क को अपनी स्वास्थ्य संबंधी जानकारी सुरक्षित रखने की सहमति प्रदान करते हैं।'
-              )}
-            </p>
+            {consentDoc ? consentDoc.body : translate('Loading consent document…', 'सहमति पत्र लोड हो रहा है…')}
           </div>
 
           {/* Agreement Checkbox */}
@@ -286,10 +281,10 @@ export default function ConsentPage() {
             >
               ❌ {translate('Decline & Go Back', 'अस्वीकार करें')}
             </button>
-            
+
             <button
               onClick={handleGrantConsent}
-              disabled={!isChecked || isLoading}
+              disabled={!isChecked || isLoading || !consentDoc}
               className="btn btn-primary btn-xl"
               style={{
                 minHeight: '64px',
@@ -297,7 +292,7 @@ export default function ConsentPage() {
                 cursor: isChecked ? 'pointer' : 'not-allowed',
               }}
             >
-              {isLoading ? translate('Submitting...', 'जमा हो रहा है...') : `✓ ${translate('Grant Consent & Continue', 'सहमति दें और आगे बढ़ें')}`}
+              {isLoading ? translate('Submitting...', 'जमा हो रहा है...') : `✓ ${translate('Grant Consent & Continue', 'सहमति दें और आगे बढ़ें')}`}
             </button>
           </div>
         </div>

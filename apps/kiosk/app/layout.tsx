@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import IdleWatcher from '../components/IdleWatcher';
 
 export const metadata: Metadata = {
   title: 'MediKiosk — Patient Intake',
@@ -23,7 +24,11 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body>{children}</body>
+      <body>
+        {/* Inactivity watcher: warns, abandons the session and resets the kiosk */}
+        <IdleWatcher />
+        {children}
+      </body>
     </html>
   );
 }

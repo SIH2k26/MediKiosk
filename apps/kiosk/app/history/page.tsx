@@ -1,208 +1,296 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { aiHistoryApi } from '@/lib/ai-history-shim';
+
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { api } from '../../lib/api-client';
+import { aiHistoryApi } from '../../lib/ai-history-shim';
 import { useAudioRecorder } from './hooks/use-audio-recorder';
 import { useTTS } from './hooks/use-tts';
-import { useRouter } from 'next/navigation';
+import { makeT, stopSpeaking } from '../../lib/i18n';
+import {
+  getVisibleQuestions,
+  SECTION_LABELS,
+  type AnswerMap,
+  type QuestionDef,
+} from '../../lib/questionnaire';
+import QuestionRenderer from '../../components/questions/QuestionRenderer';
 
-// Module-level set to survive React Strict Mode unmounts and prevent double-processing
-const globalProcessedSections = new Set<string>();
+// Module-level cache to prevent double-processing on re-renders
+const processedSectionsCache = new Set<string>();
 
 export default function HistoryPage() {
   const router = useRouter();
-  
-  const [session] = useState(() => ({
-    id: typeof window !== 'undefined' && window.crypto?.randomUUID ? window.crypto.randomUUID() : '00000000-0000-0000-0000-000000000002',
-    patientId: '00000000-0000-0000-0000-000000000001',
-    lang: 'en'
-  }));
-  const [currentSection, setCurrentSection] = useState('CHIEF_COMPLAINT');
-  const [question, setQuestion] = useState<any>(null);
-  const [answers, setAnswers] = useState<any[]>([]);
-  const [status, setStatus] = useState<'LOADING' | 'READY' | 'RECORDING' | 'PROCESSING' | 'REVIEW' | 'SECTION_DONE' | 'COMPLETED'>('LOADING');
-  const [transcript, setTranscript] = useState('');
-  const [redFlags, setRedFlags] = useState<any[]>([]);
-  const [errorMsg, setErrorMsg] = useState('');
 
-  // Guards to prevent duplicate processing / fetching
-  const isFetchingRef = useRef(false);
+  const [language, setLanguage] = useState('hi');
+  const [patient, setPatient] = useState<any | null>(null);
+  const [session, setSession] = useState<any | null>(null);
+  const [historyId, setHistoryId] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<AnswerMap>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [redFlags, setRedFlags] = useState<any[]>([]);
+
+  // Input mode & recording state
+  const [inputMode, setInputMode] = useState<'TOUCH' | 'VOICE' | 'TEXT'>('TOUCH');
+  const [textAnswer, setTextAnswer] = useState('');
+  const [transcript, setTranscript] = useState('');
+  const [audioStatus, setAudioStatus] = useState<'IDLE' | 'RECORDING' | 'TRANSCRIBING' | 'REVIEW'>('IDLE');
 
   const { isRecording, volume, startRecording, stopRecording } = useAudioRecorder();
-  const { playSpeech, stopSpeech, isPlaying } = useTTS();
+  const { playSpeech, stopSpeech } = useTTS();
+  const isFetchingRef = useRef(false);
 
-  const fetchNextQuestion = useCallback(async (section: string, currentAnswers: any[]) => {
-    console.log(`fetchNextQuestion called. isFetchingRef: ${isFetchingRef.current}, section: ${section}`);
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
-    console.log(`Setting isFetchingRef=true and fetching from API...`);
-    setStatus('LOADING');
-    setErrorMsg('');
+  const t = makeT(language);
 
+  // Bootstrap session state & start clinical history
+  useEffect(() => {
+    const lang = sessionStorage.getItem('mk_lang') || 'hi';
+    setLanguage(lang);
+
+    let storedPatient: any = null;
+    let storedSession: any = null;
     try {
-      // Only send answers belonging to the current section to the backend to prevent cross-contamination
-      const sectionAnswers = currentAnswers.filter(a => a.section_type === section);
+      storedPatient = JSON.parse(sessionStorage.getItem('mk_patient') || 'null');
+      storedSession = JSON.parse(sessionStorage.getItem('mk_session') || 'null');
+    } catch {
+      // ignore
+    }
 
-      const ccAns = currentAnswers.find(a => a.question_id === 'cc_main');
-      const chiefComplaint = ccAns ? ccAns.raw_answer : '';
+    // Default fallback for dev/demo if not navigated via intake flow
+    if (!storedPatient) {
+      storedPatient = {
+        id: '00000000-0000-0000-0000-000000000001',
+        firstName: 'Demo',
+        lastName: 'Patient',
+      };
+    }
+    if (!storedSession) {
+      storedSession = {
+        id: '00000000-0000-0000-0000-000000000002',
+        patientId: storedPatient.id,
+      };
+    }
 
-      const res = await aiHistoryApi.getNextQuestion({
-        session_id: session.id,
-        section_type: section,
-        language: session.lang,
-        chief_complaint: chiefComplaint,
-        answered_question_ids: sectionAnswers.map(a => a.question_id),
-        collected_answers: sectionAnswers
+    setPatient(storedPatient);
+    setSession(storedSession);
+
+    api
+      .startHistory(storedPatient.id, storedSession.id)
+      .then((hist) => setHistoryId(hist.id))
+      .catch((err) => {
+        console.warn('History start fallback:', err);
+        setHistoryId('00000000-0000-0000-0000-000000000003');
       });
 
-      if (res.section_complete) {
-        setStatus('SECTION_DONE');
-        
-        // Ensure we process a section exactly once
-        if (!globalProcessedSections.has(section)) {
-          globalProcessedSections.add(section);
-          try {
-            const processRes = await aiHistoryApi.processSection({
-              session_id: session.id,
-              patient_id: session.patientId,
-              language: session.lang,
-              section_type: section,
-              answers: sectionAnswers
-            });
-            
-            if (processRes.red_flags && processRes.red_flags.length > 0) {
-              setRedFlags(prev => {
-                const existingTypes = new Set(prev.map(f => f.type));
-                const newFlags = processRes.red_flags.filter((f: any) => !existingTypes.has(f.type));
-                return [...prev, ...newFlags];
-              });
-            }
-          } catch (e) {
-            console.error(e);
-          }
-        }
+    return () => {
+      stopSpeaking();
+    };
+  }, [router]);
 
-        if (res.next_section) {
-          // Move to next section; effect will trigger new fetch
-          setCurrentSection(res.next_section);
-        } else {
-          setStatus('COMPLETED');
-        }
-      } else {
-        setQuestion(res.question);
-        setStatus('READY');
-        
-        const textToSpeak = session.lang === 'hi' && res.question.hindi_text 
-          ? res.question.hindi_text 
-          : res.question.text;
-        
-        stopSpeech(); // Stop any existing TTS before starting new
-        playSpeech(textToSpeak, session.lang).catch(console.error);
-      }
-    } catch (error: any) {
-      console.error(error);
-      setErrorMsg("Connection to AI History backend failed. Is the server running?");
-      setStatus('READY');
-    } finally {
-      isFetchingRef.current = false;
-    }
-  }, [session, playSpeech, stopSpeech]);
+  // Adaptive questioning from questionnaire dataset
+  const visibleQuestions = useMemo(() => getVisibleQuestions(answers), [answers]);
+  const currentQuestion: QuestionDef | undefined = useMemo(
+    () => visibleQuestions.find((q) => !(q.id in answers)),
+    [visibleQuestions, answers]
+  );
+  const answeredCount = visibleQuestions.length - visibleQuestions.filter((q) => !(q.id in answers)).length;
+  const progressPercent = visibleQuestions.length
+    ? Math.round((answeredCount / visibleQuestions.length) * 100)
+    : 0;
 
+  // Speak question text when question changes
   useEffect(() => {
-    // Only fetch if we are not already fetching. 
-    // This resolves the StrictMode double mount issue without breaking the lifecycle.
-    fetchNextQuestion(currentSection, answers);
-    // We explicitly only want this to run when currentSection changes (or mount).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSection, fetchNextQuestion]);
+    if (!currentQuestion) return;
+    const textToSpeak = language === 'hi' ? currentQuestion.text.hi : currentQuestion.text.en;
+    stopSpeech();
+    playSpeech(textToSpeak, language).catch(() => {});
+  }, [currentQuestion, language, playSpeech, stopSpeech]);
 
-  const [inputMode, setInputMode] = useState<'VOICE' | 'TEXT'>('VOICE');
-  const [textAnswer, setTextAnswer] = useState('');
+  // Finish interview: complete section, trigger AI extraction & navigate to scan
+  const finishInterview = useCallback(
+    async (finalAnswers: AnswerMap, lastSection: string) => {
+      setIsFinishing(true);
+      try {
+        if (historyId) {
+          await api.completeHistorySection(historyId, lastSection).catch(() => undefined);
+        }
+        if (session) {
+          await api.completeSession(session.id).catch(() => undefined);
+        }
+      } finally {
+        stopSpeaking();
+        // Check if patient wants to upload documents or go straight to token
+        router.push('/scan');
+      }
+    },
+    [historyId, session, router]
+  );
 
-  const handleStartRecording = async () => {
+  // Submit an answer (via Touch, Voice, or Text)
+  const handleAnswer = async (value: string, answerType: 'TOUCH' | 'VOICE' | 'TEXT' = 'TOUCH') => {
+    if (!currentQuestion || !value.trim() || isSaving) return;
+    setIsSaving(true);
+    setErrorMsg(null);
+    stopSpeaking();
+
+    const question = currentQuestion;
+    const trimmedVal = value.trim();
+
     try {
-      stopSpeech();
-      await startRecording(handleStopRecording);
-      setStatus('RECORDING');
-    } catch (e) {
-      console.error("Mic error", e);
+      if (historyId) {
+        await api.submitHistoryAnswer(historyId, {
+          sectionType: question.section,
+          questionId: question.id,
+          questionText: question.text.en,
+          answerType: answerType,
+          rawAnswer: trimmedVal,
+        }).catch(() => undefined);
+      }
+
+      const nextAnswers = { ...answers, [question.id]: trimmedVal };
+      setAnswers(nextAnswers);
+      setTextAnswer('');
+      setTranscript('');
+      setAudioStatus('IDLE');
+      setInputMode('TOUCH');
+
+      // Check section transition
+      const nextVisible = getVisibleQuestions(nextAnswers);
+      const nextQuestion = nextVisible.find((q) => !(q.id in nextAnswers));
+
+      // Trigger background AI processing for the section if transitioning
+      if (!nextQuestion || nextQuestion.section !== question.section) {
+        const currentSec = question.section;
+        if (!processedSectionsCache.has(currentSec)) {
+          processedSectionsCache.add(currentSec);
+          // Format section answers for AI history service
+          const sectionAnswers = Object.entries(nextAnswers).map(([qid, ans]) => ({
+            question_id: qid,
+            question_text: qid,
+            answer_type: answerType,
+            raw_answer: ans,
+            section_type: currentSec,
+          }));
+
+          aiHistoryApi
+            .processSection({
+              session_id: session?.id || '00000000-0000-0000-0000-000000000002',
+              patient_id: patient?.id || '00000000-0000-0000-0000-000000000001',
+              language,
+              section_type: currentSec,
+              answers: sectionAnswers,
+            })
+            .then((res) => {
+              if (res.red_flags && res.red_flags.length > 0) {
+                setRedFlags((prev) => {
+                  const existingTypes = new Set(prev.map((f) => f.type));
+                  const newFlags = res.red_flags.filter((f: any) => !existingTypes.has(f.type));
+                  return [...prev, ...newFlags];
+                });
+              }
+            })
+            .catch((e) => console.warn('AI section processing error:', e));
+        }
+
+        if (historyId) {
+          await api.completeHistorySection(historyId, currentSec).catch(() => undefined);
+        }
+      }
+
+      if (!nextQuestion) {
+        await finishInterview(nextAnswers, question.section);
+        return;
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || t('Could not save your answer. Please try again.', 'उत्तर सहेजने में विफल। पुनः प्रयास करें।'));
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleStopRecording = async () => {
-    if (status !== 'RECORDING') return;
-    setStatus('PROCESSING');
+  // Voice recording handlers
+  const handleStartVoiceRecording = async () => {
+    try {
+      stopSpeech();
+      await startRecording(handleStopVoiceRecording);
+      setAudioStatus('RECORDING');
+    } catch (e) {
+      console.error('Microphone access error:', e);
+      setErrorMsg(t('Could not access microphone.', 'माइक्रोफ़ोन उपलब्ध नहीं है।'));
+    }
+  };
+
+  const handleStopVoiceRecording = async () => {
+    setAudioStatus('TRANSCRIBING');
     try {
       const audioBase64 = await stopRecording();
       if (!audioBase64) {
-        setStatus('READY');
+        setAudioStatus('IDLE');
         return;
       }
-      
-      const res = await aiHistoryApi.transcribeAudio(audioBase64, session.lang);
-      setTranscript(res.transcript);
-      setStatus('REVIEW');
+      const res = await aiHistoryApi.transcribeAudio(audioBase64, language);
+      setTranscript(res.transcript || '');
+      setAudioStatus('REVIEW');
     } catch (e) {
-      console.error(e);
-      setStatus('READY');
+      console.error('ASR error:', e);
+      setAudioStatus('IDLE');
+      setErrorMsg(t('Could not transcribe audio. You may type your answer instead.', 'ऑडियो अनुवाद विफल। आप टाइप कर सकते हैं।'));
     }
   };
 
-  const handleConfirmAnswer = (finalAnswer: string, answerType: 'VOICE' | 'TOUCH' | 'TEXT' = 'VOICE') => {
-    console.log(`handleConfirmAnswer called with: ${finalAnswer} (type: ${answerType})`);
-    if (!finalAnswer.trim() || !question || isFetchingRef.current) {
-      console.log(`handleConfirmAnswer: returning early (answer empty, question null, or fetching).`);
-      return;
-    }
-    const newAnswer = {
-      question_id: question.id,
-      question_text: question.text,
-      answer_type: answerType,
-      raw_answer: finalAnswer.trim(),
-      section_type: currentSection
-    };
-    
-    // Update state
-    const newAnswers = [...answers, newAnswer];
-    setAnswers(newAnswers);
-    setTranscript('');
-    setTextAnswer('');
-    setInputMode('VOICE');
-    setQuestion(null);
-    
-    // Explicitly pass updated answers to avoid closure staleness
-    fetchNextQuestion(currentSection, newAnswers);
-  };
+  const sectionLabel = currentQuestion
+    ? language === 'hi'
+      ? SECTION_LABELS[currentQuestion.section]?.hi || currentQuestion.section
+      : SECTION_LABELS[currentQuestion.section]?.en || currentQuestion.section
+    : '';
 
   return (
     <main className="kiosk-screen">
-      <div className="kiosk-container">
-        
-        {/* Progress & Status Header */}
-        <div style={{ marginBottom: 'var(--space-6)', display: 'flex', justifyContent: 'space-between' }}>
-          <div className="step-indicator">
-            <span className="text-muted">Section:</span> <strong className="text-primary-color">{currentSection}</strong>
+      {/* Header */}
+      <header className="kiosk-header">
+        <div className="logo">
+          <div className="logo-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <path d="M14 4L24 10V18L14 24L4 18V10L14 4Z" stroke="white" strokeWidth="1.5" />
+              <path d="M14 11V17M11 14H17" stroke="white" strokeWidth="2" strokeLinecap="round" />
+            </svg>
           </div>
-          <div className="text-muted">Status: {status}</div>
+          <div>
+            <div className="logo-text">MediKiosk</div>
+            <div className="logo-tagline">AI Clinical Intake</div>
+          </div>
         </div>
 
-        {/* Error State */}
-        {errorMsg && (
-          <div className="card" style={{ borderColor: 'var(--color-emergency)', marginBottom: 'var(--space-6)' }}>
-            <h3 style={{ color: 'var(--color-emergency)' }}>⚠️ System Error</h3>
-            <p className="text-body mt-2">{errorMsg}</p>
-            <button className="btn btn-secondary" style={{ marginTop: 'var(--space-4)' }} onClick={() => fetchNextQuestion(currentSection, answers)}>
-              Retry
-            </button>
-          </div>
-        )}
+        <div className="step-indicator" aria-label="Step 4 of 5">
+          {[1, 2, 3, 4, 5].map((step) => (
+            <div
+              key={step}
+              className={`step-dot ${step === 4 ? 'active' : step < 4 ? 'completed' : ''}`}
+            />
+          ))}
+        </div>
+      </header>
 
-        {/* Red Flags Banner */}
+      <div className="kiosk-container" style={{ paddingTop: '100px', maxWidth: '780px' }}>
+        {/* Real-time Red Flags Banner */}
         {redFlags.length > 0 && (
-          <div className="card" style={{ borderColor: 'var(--color-emergency)', background: 'rgba(217, 48, 37, 0.15)', marginBottom: 'var(--space-6)' }}>
-            <div className="badge badge-emergency" style={{ marginBottom: 'var(--space-4)' }}>Emergency Action Required</div>
-            <ul style={{ paddingLeft: 'var(--space-4)' }}>
+          <div
+            className="fade-in-up"
+            style={{
+              background: 'rgba(217, 48, 37, 0.15)',
+              border: '1px solid var(--color-emergency)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '1.25rem',
+              marginBottom: '1.5rem',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#FF8A80', fontWeight: 700, marginBottom: '0.5rem' }}>
+              <span>🚨</span> {t('Triage Red Flag Detected', 'आपातकालीन लक्षण दर्ज')}
+            </div>
+            <ul style={{ paddingLeft: '1.5rem', margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
               {redFlags.map((rf, i) => (
-                <li key={i} className="text-body">
+                <li key={i}>
                   <strong>{rf.type}</strong>: {rf.description}
                 </li>
               ))}
@@ -210,181 +298,218 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {/* Loading / Transition State */}
-        {(status === 'LOADING' || status === 'SECTION_DONE') && !errorMsg && (
-          <div className="card card-sm fade-in-up text-center py-12">
-            <h2 className="text-heading text-muted">{status === 'LOADING' ? 'Loading next question...' : 'Processing section...'}</h2>
-            <div className="progress-bar-container" style={{ marginTop: 'var(--space-6)', maxWidth: '300px', margin: 'var(--space-6) auto 0' }}>
-              <div className="progress-bar-fill skeleton" style={{ width: '100%' }}></div>
+        {/* Error message */}
+        {errorMsg && (
+          <div
+            className="fade-in-up"
+            style={{
+              background: 'rgba(217, 48, 37, 0.12)',
+              border: '1px solid var(--color-emergency)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '1rem',
+              color: '#FF8A80',
+              textAlign: 'center',
+              marginBottom: '1.5rem',
+              fontWeight: 600,
+            }}
+          >
+            ⚠️ {errorMsg}
+          </div>
+        )}
+
+        {/* Progress & Section Header */}
+        <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <span className="text-body text-secondary" style={{ fontWeight: 600 }}>
+              📋 {sectionLabel}
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              {/* Input mode toggles */}
+              <div style={{ display: 'flex', gap: '0.35rem', background: 'rgba(255,255,255,0.06)', borderRadius: 'var(--radius-md)', padding: '2px' }}>
+                <button
+                  className={`btn btn-sm ${inputMode === 'TOUCH' ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={() => setInputMode('TOUCH')}
+                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}
+                >
+                  👆 {t('Touch', 'टच')}
+                </button>
+                <button
+                  className={`btn btn-sm ${inputMode === 'VOICE' ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={() => setInputMode('VOICE')}
+                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}
+                >
+                  🎤 {t('Voice', 'बोलें')}
+                </button>
+                <button
+                  className={`btn btn-sm ${inputMode === 'TEXT' ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={() => setInputMode('TEXT')}
+                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}
+                >
+                  ⌨️ {t('Type', 'लिखें')}
+                </button>
+              </div>
+
+              <span className="text-muted" style={{ fontSize: '0.9rem' }}>
+                {answeredCount} / {visibleQuestions.length}
+              </span>
             </div>
           </div>
-        )}
 
-        {/* Completed State */}
-        {status === 'COMPLETED' && (
-          <div className="card fade-in-up text-center py-12">
-            <h2 className="text-display" style={{ color: 'var(--color-success)', marginBottom: 'var(--space-4)' }}>History Complete</h2>
-            <p className="text-heading text-secondary" style={{ marginBottom: 'var(--space-8)' }}>
-              Thank you. Your clinical history has been successfully recorded and sent to the doctor.
+          <div
+            role="progressbar"
+            aria-valuenow={progressPercent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            style={{
+              height: '8px',
+              borderRadius: 'var(--radius-full)',
+              background: 'rgba(255,255,255,0.08)',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                width: `${progressPercent}%`,
+                height: '100%',
+                background: 'var(--color-primary)',
+                borderRadius: 'var(--radius-full)',
+                transition: 'width 0.3s ease',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Loading / Finishing / Question display */}
+        {!historyId && !errorMsg && (
+          <div className="card fade-in-up" style={{ textAlign: 'center', padding: '3rem' }}>
+            <p className="text-body text-secondary">
+              {t('Preparing your clinical interview…', 'आपका साक्षात्कार तैयार हो रहा है…')}
             </p>
-            <button className="btn btn-primary btn-xl" onClick={() => router.push('/')}>
-              Finish
-            </button>
           </div>
         )}
 
-        {/* Main Question Card */}
-        {question && status !== 'SECTION_DONE' && status !== 'COMPLETED' && (
-          <div className="card fade-in-up">
-            <h2 className="text-display" style={{ marginBottom: 'var(--space-4)' }}>{question.text}</h2>
-            {question.hindi_text && (
-              <h3 className="text-heading text-secondary" style={{ marginBottom: 'var(--space-8)' }}>{question.hindi_text}</h3>
+        {isFinishing && (
+          <div className="card fade-in-up" style={{ textAlign: 'center', padding: '3rem' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
+            <h2 className="text-display" style={{ color: 'var(--color-success)', marginBottom: '0.5rem' }}>
+              {t('Intake Recorded!', 'जानकारी दर्ज हो गई!')}
+            </h2>
+            <p className="text-body text-secondary">
+              {t('Proceeding to document scan & OPD token…', 'दस्तावेज़ स्कैन और टोकन की ओर बढ़ रहे हैं…')}
+            </p>
+          </div>
+        )}
+
+        {/* Active Question Render */}
+        {historyId && currentQuestion && !isFinishing && (
+          <div>
+            {inputMode === 'TOUCH' && (
+              <QuestionRenderer
+                question={currentQuestion}
+                language={language}
+                onAnswer={(val) => handleAnswer(val, 'TOUCH')}
+                disabled={isSaving}
+              />
             )}
 
-            {/* READY to answer */}
-            {status === 'READY' && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-6)' }}>
-                
-                {/* Input Mode Selector */}
-                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'center', marginBottom: 'var(--space-2)' }}>
-                  <button
-                    className={`btn ${inputMode === 'VOICE' ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => setInputMode('VOICE')}
-                    style={{ padding: '0.45rem 1.25rem', fontSize: '0.9rem' }}
-                  >
-                    🎤 Voice Input
-                  </button>
-                  <button
-                    className={`btn ${inputMode === 'TEXT' ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => setInputMode('TEXT')}
-                    style={{ padding: '0.45rem 1.25rem', fontSize: '0.9rem' }}
-                  >
-                    ⌨️ Type Answer
-                  </button>
-                </div>
+            {inputMode === 'VOICE' && (
+              <div className="card fade-in-up" style={{ textAlign: 'center', padding: '2.5rem' }}>
+                <h2 className="text-heading" style={{ marginBottom: '0.75rem' }}>
+                  {language === 'hi' ? currentQuestion.text.hi : currentQuestion.text.en}
+                </h2>
+                <p className="text-body text-secondary" style={{ marginBottom: '2rem' }}>
+                  {t('Tap the microphone and speak your answer clearly.', 'माइक्रोफ़ोन दबाएं और अपना उत्तर स्पष्ट रूप से बोलें।')}
+                </p>
 
-                {inputMode === 'VOICE' ? (
-                  /* Voice Input */
-                  <button 
-                    className="btn btn-primary btn-xl"
-                    onClick={handleStartRecording}
-                  >
-                    <span style={{ fontSize: '1.5em' }}>🎤</span> Tap to Speak
+                {audioStatus === 'IDLE' && (
+                  <button className="btn btn-primary btn-xl" onClick={handleStartVoiceRecording} disabled={isSaving}>
+                    <span style={{ fontSize: '1.8rem' }}>🎤</span> {t('Tap to Speak', 'बोलने के लिए दबाएं')}
                   </button>
-                ) : (
-                  /* Texting / Keyboard Input Option */
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', width: '100%', maxWidth: '600px' }}>
-                    <textarea
-                      placeholder="Type your answer here in your preferred language..."
-                      value={textAnswer}
-                      onChange={(e) => setTextAnswer(e.target.value)}
-                      rows={3}
-                      style={{
-                        width: '100%',
-                        padding: '1rem',
-                        fontSize: '1.1rem',
-                        borderRadius: 'var(--radius-lg)',
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '1px solid var(--color-border)',
-                        color: '#fff',
-                        resize: 'none',
-                        fontFamily: 'inherit',
-                      }}
-                    />
-                    <button
-                      className="btn btn-primary btn-lg"
-                      disabled={!textAnswer.trim()}
-                      onClick={() => handleConfirmAnswer(textAnswer, 'TEXT')}
-                      style={{ alignSelf: 'flex-end' }}
-                    >
-                      Submit Answer →
+                )}
+
+                {audioStatus === 'RECORDING' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+                    <button className="mic-button recording" onClick={handleStopVoiceRecording}>
+                      <span style={{ fontSize: '2rem' }}>🎙️</span>
                     </button>
+                    <div style={{ color: 'var(--color-emergency)', fontWeight: 600 }}>
+                      {t('Listening… Tap to stop', 'सुन रहे हैं… रोकने के लिए दबाएं')}
+                    </div>
+                    <div style={{ width: '200px', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.min(100, volume * 2)}%`, height: '100%', background: 'var(--color-emergency)', transition: 'width 0.1s' }} />
+                    </div>
                   </div>
                 )}
-                
-                {/* Touch Options */}
-                {question.options && question.options.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', justifyContent: 'center', marginTop: 'var(--space-4)' }}>
-                    {question.options.map((opt: any) => (
-                      <button 
-                        key={opt.id}
-                        className="btn btn-secondary"
-                        onClick={() => handleConfirmAnswer(opt.value, 'TOUCH')}
-                      >
-                        {opt.label} {opt.hindi_label ? `(${opt.hindi_label})` : ''}
+
+                {audioStatus === 'TRANSCRIBING' && (
+                  <div>
+                    <span className="spinner" />
+                    <p className="text-body text-secondary" style={{ marginTop: '1rem' }}>
+                      {t('Transcribing speech…', 'आवाज़ का अनुवाद हो रहा है…')}
+                    </p>
+                  </div>
+                )}
+
+                {audioStatus === 'REVIEW' && (
+                  <div className="fade-in-up" style={{ textAlign: 'left', marginTop: '1rem' }}>
+                    <label className="text-body text-secondary" style={{ display: 'block', marginBottom: '0.5rem' }}>
+                      {t('Recognized Speech (You can edit before confirming):', 'पहचानी गई आवाज़:')}
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={transcript}
+                      onChange={(e) => setTranscript(e.target.value)}
+                      style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}
+                    />
+                    <div className="btn-row">
+                      <button className="btn btn-secondary" onClick={() => setAudioStatus('IDLE')}>
+                        {t('Record Again', 'दोबारा बोलें')}
                       </button>
-                    ))}
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => handleAnswer(transcript, 'VOICE')}
+                        disabled={!transcript.trim()}
+                      >
+                        {t('Confirm Answer →', 'पुष्टि करें →')}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
             )}
 
-            {/* RECORDING state */}
-            {status === 'RECORDING' && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-6)', padding: 'var(--space-6) 0' }}>
-                <button 
-                  className="mic-button recording"
-                  onClick={handleStopRecording}
-                >
-                  <span style={{ fontSize: '2em' }}>🎙️</span>
-                </button>
-                
-                <h3 className="text-heading" style={{ color: 'var(--color-emergency)' }}>Listening...</h3>
-                
-                <div className="progress-bar-container" style={{ maxWidth: '400px' }}>
-                  <div 
-                    className="progress-bar-fill" 
-                    style={{ 
-                      width: `${Math.min(100, volume * 1.5)}%`, 
-                      background: 'var(--color-emergency)',
-                      transition: 'width 100ms linear'
-                    }}
-                  ></div>
-                </div>
-                
-                <button className="btn btn-secondary" onClick={handleStopRecording}>
-                  Stop Recording
-                </button>
-              </div>
-            )}
-
-            {/* PROCESSING state */}
-            {status === 'PROCESSING' && (
-              <div className="text-center py-12">
-                <h3 className="text-heading text-muted">Transcribing audio...</h3>
-                <div className="progress-bar-container" style={{ marginTop: 'var(--space-6)', maxWidth: '300px', margin: 'var(--space-6) auto 0' }}>
-                  <div className="progress-bar-fill skeleton" style={{ width: '100%' }}></div>
-                </div>
-              </div>
-            )}
-
-            {/* REVIEW transcript state */}
-            {status === 'REVIEW' && (
-              <div className="fade-in-up">
-                <h4 className="text-subheading text-secondary" style={{ marginBottom: 'var(--space-2)' }}>You said:</h4>
-                <div className="card-sm" style={{ background: 'rgba(255, 255, 255, 0.08)', marginBottom: 'var(--space-6)' }}>
-                  <p className="text-heading">{transcript}</p>
-                </div>
-                
-                <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
-                  <button 
-                    className="btn btn-secondary" 
-                    style={{ flex: 1 }}
-                    onClick={() => setStatus('READY')}
-                  >
-                    Try Again
+            {inputMode === 'TEXT' && (
+              <div className="card fade-in-up" style={{ padding: '2.5rem' }}>
+                <h2 className="text-heading" style={{ marginBottom: '0.75rem' }}>
+                  {language === 'hi' ? currentQuestion.text.hi : currentQuestion.text.en}
+                </h2>
+                <p className="text-body text-secondary" style={{ marginBottom: '1.5rem' }}>
+                  {t('Type your answer in your preferred language:', 'अपनी पसंदीदा भाषा में उत्तर लिखें:')}
+                </p>
+                <textarea
+                  className="form-input"
+                  rows={4}
+                  placeholder={t('e.g. 3 days of mild fever with headache...', 'उदा. 3 दिनों से हल्का बुखार और सिरदर्द...')}
+                  value={textAnswer}
+                  onChange={(e) => setTextAnswer(e.target.value)}
+                  style={{ width: '100%', fontSize: '1.1rem', marginBottom: '1.5rem', resize: 'vertical' }}
+                  autoFocus
+                />
+                <div className="btn-row">
+                  <button className="btn btn-secondary" onClick={() => setInputMode('TOUCH')}>
+                    {t('Use Touch Buttons', 'टच बटन का उपयोग करें')}
                   </button>
-                  <button 
-                    className="btn btn-primary" 
-                    style={{ flex: 1, background: 'var(--color-success)' }}
-                    onClick={() => handleConfirmAnswer(transcript)}
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => handleAnswer(textAnswer, 'TEXT')}
+                    disabled={!textAnswer.trim() || isSaving}
                   >
-                    Confirm & Continue
+                    {isSaving ? t('Saving…', 'सहेजा जा रहा है…') : t('Submit Answer →', 'उत्तर भेजें →')}
                   </button>
                 </div>
               </div>
             )}
-
           </div>
         )}
       </div>

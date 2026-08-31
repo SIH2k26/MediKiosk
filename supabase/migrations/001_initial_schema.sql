@@ -8,9 +8,9 @@
 -- =============================================================================
 
 -- Enable required extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS "vector";  -- pgvector for future semantic search
+-- Note: uuid-ossp extension not needed - using gen_random_uuid() instead
 
 -- =============================================================================
 -- TYPES / ENUMS
@@ -46,7 +46,7 @@ CREATE TYPE timeline_event_type AS ENUM (
 -- =============================================================================
 
 CREATE TABLE profiles (
-  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id       UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   role          user_role NOT NULL DEFAULT 'PATIENT',
   full_name     TEXT NOT NULL,
@@ -67,7 +67,7 @@ CREATE INDEX idx_profiles_role ON profiles(role);
 -- =============================================================================
 
 CREATE TABLE patients (
-  id                   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profile_id           UUID REFERENCES profiles(id) ON DELETE SET NULL,
   abha_id              TEXT UNIQUE,                          -- Ayushman Bharat Health Account
   uhid                 TEXT,                                 -- Hospital-specific ID
@@ -97,7 +97,7 @@ CREATE INDEX idx_patients_created_at ON patients(created_at DESC);
 -- =============================================================================
 
 CREATE TABLE patient_sessions (
-  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id    UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
   kiosk_id      TEXT,                                       -- Physical kiosk identifier
   status        session_status NOT NULL DEFAULT 'ACTIVE',
@@ -121,7 +121,7 @@ CREATE INDEX idx_sessions_started_at ON patient_sessions(started_at DESC);
 -- =============================================================================
 
 CREATE TABLE consents (
-  id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id              UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
   session_id              UUID NOT NULL REFERENCES patient_sessions(id) ON DELETE CASCADE,
   status                  consent_status NOT NULL DEFAULT 'PENDING',
@@ -145,7 +145,7 @@ CREATE INDEX idx_consents_status ON consents(status);
 -- =============================================================================
 
 CREATE TABLE clinical_histories (
-  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id      UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
   session_id      UUID NOT NULL REFERENCES patient_sessions(id) ON DELETE CASCADE,
   ayush_mode      BOOLEAN NOT NULL DEFAULT FALSE,           -- AYUSH vs standard clinical
@@ -165,7 +165,7 @@ CREATE INDEX idx_histories_session_id ON clinical_histories(session_id);
 -- =============================================================================
 
 CREATE TABLE history_sections (
-  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   history_id     UUID NOT NULL REFERENCES clinical_histories(id) ON DELETE CASCADE,
   section_type   history_section_type NOT NULL,
   is_complete    BOOLEAN NOT NULL DEFAULT FALSE,
@@ -184,7 +184,7 @@ CREATE INDEX idx_sections_history_id ON history_sections(history_id);
 -- =============================================================================
 
 CREATE TABLE history_answers (
-  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   section_id        UUID NOT NULL REFERENCES history_sections(id) ON DELETE CASCADE,
   question_id       TEXT NOT NULL,
   question_text     TEXT NOT NULL,
@@ -206,7 +206,7 @@ CREATE INDEX idx_answers_section_id ON history_answers(section_id);
 -- =============================================================================
 
 CREATE TABLE documents (
-  id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id          UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
   session_id          UUID NOT NULL REFERENCES patient_sessions(id) ON DELETE CASCADE,
   type                document_type NOT NULL DEFAULT 'OTHER',
@@ -234,7 +234,7 @@ CREATE INDEX idx_documents_status ON documents(status);
 -- =============================================================================
 
 CREATE TABLE document_pages (
-  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   document_id  UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
   page_number  INTEGER NOT NULL,
   storage_url  TEXT NOT NULL,
@@ -250,7 +250,7 @@ CREATE INDEX idx_document_pages_document_id ON document_pages(document_id);
 -- =============================================================================
 
 CREATE TABLE extracted_entities (
-  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   document_id       UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
   page_number       INTEGER,
   entity_type       entity_type NOT NULL,
@@ -272,7 +272,7 @@ CREATE INDEX idx_entities_type ON extracted_entities(entity_type);
 -- =============================================================================
 
 CREATE TABLE investigations (
-  id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id         UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
   source_document_id UUID REFERENCES documents(id) ON DELETE SET NULL,
   name               TEXT NOT NULL,
@@ -300,7 +300,7 @@ CREATE INDEX idx_investigations_test_date ON investigations(test_date DESC);
 -- =============================================================================
 
 CREATE TABLE medications (
-  id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id         UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
   source_document_id UUID REFERENCES documents(id) ON DELETE SET NULL,
   name               TEXT NOT NULL,
@@ -325,7 +325,7 @@ CREATE INDEX idx_medications_patient_id ON medications(patient_id);
 -- =============================================================================
 
 CREATE TABLE allergies (
-  id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id         UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
   source_document_id UUID REFERENCES documents(id) ON DELETE SET NULL,
   substance          TEXT NOT NULL,
@@ -345,7 +345,7 @@ CREATE INDEX idx_allergies_patient_id ON allergies(patient_id);
 -- =============================================================================
 
 CREATE TABLE procedures (
-  id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id         UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
   source_document_id UUID REFERENCES documents(id) ON DELETE SET NULL,
   procedure_name     TEXT NOT NULL,
@@ -365,7 +365,7 @@ CREATE INDEX idx_procedures_patient_id ON procedures(patient_id);
 -- =============================================================================
 
 CREATE TABLE timeline_events (
-  id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id         UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
   event_date         DATE,
   event_year         INTEGER,
@@ -385,7 +385,7 @@ CREATE INDEX idx_timeline_event_date ON timeline_events(event_date DESC NULLS LA
 -- =============================================================================
 
 CREATE TABLE clinical_summaries (
-  id                          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id                  UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
   session_id                  UUID NOT NULL REFERENCES patient_sessions(id) ON DELETE CASCADE,
   status                      summary_status NOT NULL DEFAULT 'GENERATING',
@@ -425,7 +425,7 @@ CREATE INDEX idx_summaries_risk_level ON clinical_summaries(risk_level);
 -- =============================================================================
 
 CREATE TABLE doctor_reviews (
-  id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   summary_id       UUID NOT NULL REFERENCES clinical_summaries(id) ON DELETE CASCADE,
   doctor_id        UUID NOT NULL REFERENCES profiles(id) ON DELETE RESTRICT,
   action           review_action NOT NULL,
@@ -452,7 +452,7 @@ CREATE INDEX idx_reviews_doctor_id ON doctor_reviews(doctor_id);
 -- =============================================================================
 
 CREATE TABLE triage_alerts (
-  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id        UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
   session_id        UUID NOT NULL REFERENCES patient_sessions(id) ON DELETE CASCADE,
   risk_level        risk_level NOT NULL,
@@ -475,7 +475,7 @@ CREATE INDEX idx_triage_alerts_created_at ON triage_alerts(created_at DESC);
 -- =============================================================================
 
 CREATE TABLE audit_logs (
-  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   actor_id       UUID REFERENCES profiles(id) ON DELETE SET NULL,
   actor_role     user_role,
   patient_id     UUID REFERENCES patients(id) ON DELETE SET NULL,
