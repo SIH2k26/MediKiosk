@@ -1,13 +1,5 @@
 'use client';
 
-// =============================================================================
-// Reusable touch-first question components
-// =============================================================================
-// Designed for elderly / low-literacy patients: large touch targets, emoji
-// affordances, bilingual labels, and an audio prompt per question.
-// Each component reports its answer as a string via onAnswer().
-// =============================================================================
-
 import { useState } from 'react';
 import type { QuestionDef, QuestionOption } from '../../lib/questionnaire';
 import { makeT, speak } from '../../lib/i18n';
@@ -21,13 +13,13 @@ export interface QuestionInputProps {
 
 const optionLabel = (opt: QuestionOption, lang: string) => (lang === 'hi' ? opt.hi : opt.en);
 
-const bigButtonStyle: React.CSSProperties = {
-  minHeight: '72px',
-  fontSize: '1.15rem',
+const compactButtonStyle: React.CSSProperties = {
+  minHeight: '48px',
+  fontSize: '14px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: '0.75rem',
+  gap: '8px',
 };
 
 // ------------------------------- YES / NO -----------------------------------
@@ -35,11 +27,11 @@ const bigButtonStyle: React.CSSProperties = {
 export function YesNoInput({ question, language, onAnswer, disabled }: QuestionInputProps) {
   const t = makeT(language);
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-      <button className="btn btn-primary btn-xl" style={bigButtonStyle} disabled={disabled} onClick={() => onAnswer('yes')}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+      <button className="btn btn-primary" style={compactButtonStyle} disabled={disabled} onClick={() => onAnswer('yes')}>
         ✅ {t('Yes', 'हां')}
       </button>
-      <button className="btn btn-secondary btn-xl" style={bigButtonStyle} disabled={disabled} onClick={() => onAnswer('no')}>
+      <button className="btn btn-secondary" style={compactButtonStyle} disabled={disabled} onClick={() => onAnswer('no')}>
         ❌ {t('No', 'नहीं')}
       </button>
     </div>
@@ -50,19 +42,19 @@ export function YesNoInput({ question, language, onAnswer, disabled }: QuestionI
 
 export function SingleChoiceInput({ question, language, onAnswer, disabled }: QuestionInputProps) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }} role="radiogroup">
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }} role="radiogroup">
       {(question.options || []).map((opt) => (
         <button
           key={opt.value}
-          className="lang-card"
-          style={{ minHeight: '88px' }}
+          className="choose-card"
+          style={{ minHeight: '56px', padding: '10px 14px', alignItems: 'center', flexDirection: 'row', gap: '8px' }}
           disabled={disabled}
           onClick={() => onAnswer(opt.value)}
           role="radio"
           aria-checked={false}
         >
-          {opt.emoji && <span style={{ fontSize: '1.8rem' }} aria-hidden="true">{opt.emoji}</span>}
-          <span className="lang-card-name" style={{ fontSize: '1.05rem' }}>{optionLabel(opt, language)}</span>
+          {opt.emoji && <span style={{ fontSize: '18px' }} aria-hidden="true">{opt.emoji}</span>}
+          <span style={{ fontSize: '13.5px', fontWeight: 600, color: '#F0F4F8' }}>{optionLabel(opt, language)}</span>
         </button>
       ))}
     </div>
@@ -77,7 +69,6 @@ export function MultiChoiceInput({ question, language, onAnswer, disabled }: Que
 
   const toggle = (value: string) => {
     setSelected((prev) => {
-      // 'none' is mutually exclusive with the other options
       if (value === 'none') return prev.includes('none') ? [] : ['none'];
       const next = prev.filter((v) => v !== 'none');
       return next.includes(value) ? next.filter((v) => v !== value) : [...next, value];
@@ -86,137 +77,117 @@ export function MultiChoiceInput({ question, language, onAnswer, disabled }: Que
 
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
         {(question.options || []).map((opt) => {
           const isSelected = selected.includes(opt.value);
           return (
             <button
               key={opt.value}
-              className={`lang-card ${isSelected ? 'selected' : ''}`}
-              style={{ minHeight: '88px' }}
+              className={`choose-card ${isSelected ? 'choose-card-highlight' : ''}`}
+              style={{ minHeight: '56px', padding: '10px 14px', alignItems: 'center', flexDirection: 'row', gap: '8px' }}
               disabled={disabled}
               onClick={() => toggle(opt.value)}
               role="checkbox"
               aria-checked={isSelected}
             >
-              {opt.emoji && <span style={{ fontSize: '1.8rem' }} aria-hidden="true">{opt.emoji}</span>}
-              <span className="lang-card-name" style={{ fontSize: '1.05rem' }}>{optionLabel(opt, language)}</span>
-              {isSelected && <span aria-hidden="true">✓</span>}
+              {opt.emoji && <span style={{ fontSize: '18px' }} aria-hidden="true">{opt.emoji}</span>}
+              <span style={{ fontSize: '13.5px', fontWeight: 600, color: '#F0F4F8' }}>{optionLabel(opt, language)}</span>
             </button>
           );
         })}
       </div>
       <button
-        className="btn btn-primary btn-xl"
-        style={{ ...bigButtonStyle, width: '100%', opacity: selected.length ? 1 : 0.4 }}
-        disabled={disabled || selected.length === 0}
+        className="btn btn-primary"
+        style={{ width: '100%', height: '42px', fontSize: '14px', fontWeight: 700 }}
+        disabled={selected.length === 0 || disabled}
         onClick={() => onAnswer(selected.join(','))}
       >
-        {t('Confirm', 'पुष्टि करें')} →
+        {t('Continue →', 'आगे बढ़ें →')}
       </button>
     </div>
   );
 }
 
-// -------------------------------- NUMBER ------------------------------------
+// ------------------------------- NUMBER -------------------------------------
 
 export function NumberInput({ question, language, onAnswer, disabled }: QuestionInputProps) {
   const t = makeT(language);
-  const [value, setValue] = useState('');
-  const isValid =
-    value !== '' &&
-    (question.min === undefined || Number(value) >= question.min) &&
-    (question.max === undefined || Number(value) <= question.max);
-
+  const [val, setVal] = useState('');
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <input
-        type="number"
-        inputMode="numeric"
-        className="form-input"
-        style={{ fontSize: '1.5rem', textAlign: 'center', minHeight: '64px' }}
-        min={question.min}
-        max={question.max}
-        value={value}
-        disabled={disabled}
-        onChange={(e) => setValue(e.target.value)}
-      />
-      <button
-        className="btn btn-primary btn-xl"
-        style={{ ...bigButtonStyle, opacity: isValid ? 1 : 0.4 }}
-        disabled={disabled || !isValid}
-        onClick={() => onAnswer(value)}
-      >
-        {t('Confirm', 'पुष्टि करें')} →
-      </button>
-    </div>
+    <form onSubmit={(e) => { e.preventDefault(); if (val) onAnswer(val); }}>
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <input
+          type="number"
+          className="form-input"
+          min={question.min ?? 0}
+          max={question.max ?? 999}
+          placeholder={t('Enter number…', 'संख्या दर्ज करें…')}
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          disabled={disabled}
+          autoFocus
+          required
+        />
+        <button type="submit" className="btn btn-primary" style={{ height: '42px', padding: '0 20px' }} disabled={!val || disabled}>
+          {t('Next →', 'आगे →')}
+        </button>
+      </div>
+    </form>
   );
 }
 
-// --------------------------------- DATE -------------------------------------
+// -------------------------------- DATE --------------------------------------
 
 export function DateInput({ question, language, onAnswer, disabled }: QuestionInputProps) {
   const t = makeT(language);
-  const [value, setValue] = useState('');
+  const [val, setVal] = useState('');
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <input
-        type="date"
-        className="form-input"
-        style={{ fontSize: '1.3rem', minHeight: '64px' }}
-        value={value}
-        disabled={disabled}
-        onChange={(e) => setValue(e.target.value)}
-      />
-      <button
-        className="btn btn-primary btn-xl"
-        style={{ ...bigButtonStyle, opacity: value ? 1 : 0.4 }}
-        disabled={disabled || !value}
-        onClick={() => onAnswer(value)}
-      >
-        {t('Confirm', 'पुष्टि करें')} →
-      </button>
-    </div>
+    <form onSubmit={(e) => { e.preventDefault(); if (val) onAnswer(val); }}>
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <input
+          type="date"
+          className="form-input"
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          disabled={disabled}
+          autoFocus
+          required
+        />
+        <button type="submit" className="btn btn-primary" style={{ height: '42px', padding: '0 20px' }} disabled={!val || disabled}>
+          {t('Next →', 'आगे →')}
+        </button>
+      </div>
+    </form>
   );
 }
 
-// --------------------------------- TEXT -------------------------------------
+// -------------------------------- TEXT --------------------------------------
 
 export function TextInput({ question, language, onAnswer, disabled }: QuestionInputProps) {
   const t = makeT(language);
-  const [value, setValue] = useState('');
-  const canSkip = !question.required;
+  const [val, setVal] = useState('');
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <textarea
-        className="form-input"
-        rows={3}
-        style={{ fontSize: '1.2rem', resize: 'none' }}
-        value={value}
-        disabled={disabled}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder={t('Type here…', 'यहां लिखें…')}
-      />
-      <div style={{ display: 'grid', gridTemplateColumns: canSkip ? '1fr 1fr' : '1fr', gap: '1rem' }}>
-        {canSkip && (
-          <button className="btn btn-secondary btn-xl" style={bigButtonStyle} disabled={disabled} onClick={() => onAnswer('skipped')}>
-            {t('Skip', 'छोड़ें')}
-          </button>
-        )}
-        <button
-          className="btn btn-primary btn-xl"
-          style={{ ...bigButtonStyle, opacity: value.trim() ? 1 : 0.4 }}
-          disabled={disabled || !value.trim()}
-          onClick={() => onAnswer(value.trim())}
-        >
-          {t('Confirm', 'पुष्टि करें')} →
+    <form onSubmit={(e) => { e.preventDefault(); if (val) onAnswer(val); }}>
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <input
+          type="text"
+          className="form-input"
+          placeholder={t('Type your answer…', 'यहाँ लिखें…')}
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          disabled={disabled}
+          autoFocus
+          required
+        />
+        <button type="submit" className="btn btn-primary" style={{ height: '42px', padding: '0 20px' }} disabled={!val || disabled}>
+          {t('Next →', 'आगे →')}
         </button>
       </div>
-    </div>
+    </form>
   );
 }
 
-// -------------------------- SCALE (severity 1–10) ---------------------------
+// -------------------------------- SCALE -------------------------------------
 
 export function ScaleInput({ question, language, onAnswer, disabled }: QuestionInputProps) {
   const t = makeT(language);
@@ -225,12 +196,12 @@ export function ScaleInput({ question, language, onAnswer, disabled }: QuestionI
   const values = Array.from({ length: max - min + 1 }, (_, i) => min + i);
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px', marginBottom: '8px' }}>
         {values.map((v) => (
           <button
             key={v}
-            className="lang-card"
-            style={{ minHeight: '72px', fontSize: '1.5rem', fontWeight: 700 }}
+            className="choose-card"
+            style={{ minHeight: '44px', padding: '6px', fontSize: '15px', fontWeight: 700, alignItems: 'center', justifyContent: 'center' }}
             disabled={disabled}
             onClick={() => onAnswer(String(v))}
             aria-label={`${v} / ${max}`}
@@ -239,7 +210,7 @@ export function ScaleInput({ question, language, onAnswer, disabled }: QuestionI
           </button>
         ))}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)' }}>
         <span>🙂 {t('Mild', 'हल्की')}</span>
         <span>😣 {t('Worst', 'सबसे गंभीर')}</span>
       </div>
@@ -265,12 +236,22 @@ export default function QuestionRenderer(props: QuestionInputProps) {
   const Component = COMPONENTS[question.type] ?? TextInput;
 
   return (
-    <div className="card fade-in-up" key={question.id}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '2rem' }}>
-        <h2 className="text-heading" style={{ fontSize: '1.5rem', lineHeight: 1.4 }}>{questionText}</h2>
+    <div
+      style={{
+        backgroundColor: 'rgba(13, 18, 25, 0.94)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: '16px',
+        padding: '18px 20px',
+      }}
+      key={question.id}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', marginBottom: '14px' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '17px', fontWeight: 700, lineHeight: 1.35, margin: 0 }}>
+          {questionText}
+        </h2>
         <button
           className="btn btn-secondary"
-          style={{ minHeight: '48px', borderRadius: 'var(--radius-full)', padding: '0 1.25rem', flexShrink: 0 }}
+          style={{ height: '32px', padding: '0 10px', borderRadius: '9999px', flexShrink: 0, fontSize: '13px' }}
           onClick={() => speak(questionText, language)}
           aria-label="Listen to the question"
         >

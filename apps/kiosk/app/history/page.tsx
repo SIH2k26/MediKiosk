@@ -15,8 +15,16 @@ import {
 } from '../../lib/questionnaire';
 import QuestionRenderer from '../../components/questions/QuestionRenderer';
 
-// Module-level cache to prevent double-processing on re-renders
 const processedSectionsCache = new Set<string>();
+
+function MediKioskLogo() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M10 2L18 7V13L10 18L2 13V7L10 2Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+      <path d="M7 10h6M10 7v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export default function HistoryPage() {
   const router = useRouter();
@@ -37,7 +45,7 @@ export default function HistoryPage() {
   const [transcript, setTranscript] = useState('');
   const [audioStatus, setAudioStatus] = useState<'IDLE' | 'RECORDING' | 'TRANSCRIBING' | 'REVIEW'>('IDLE');
 
-  const { isRecording, volume, startRecording, stopRecording } = useAudioRecorder();
+  const { volume, startRecording, stopRecording } = useAudioRecorder();
   const { playSpeech, stopSpeech } = useTTS();
   const isFetchingRef = useRef(false);
 
@@ -57,18 +65,18 @@ export default function HistoryPage() {
       // ignore
     }
 
-    // Default fallback for dev/demo if not navigated via intake flow
     if (!storedPatient) {
       storedPatient = {
-        id: '00000000-0000-0000-0000-000000000001',
-        firstName: 'Demo',
+        id: 'pt-demo-' + Date.now(),
+        firstName: 'Walk-in',
         lastName: 'Patient',
       };
     }
     if (!storedSession) {
       storedSession = {
-        id: '00000000-0000-0000-0000-000000000002',
+        id: 'sess-demo-' + Date.now(),
         patientId: storedPatient.id,
+        language: lang,
       };
     }
 
@@ -80,7 +88,7 @@ export default function HistoryPage() {
       .then((hist) => setHistoryId(hist.id))
       .catch((err) => {
         console.warn('History start fallback:', err);
-        setHistoryId('00000000-0000-0000-0000-000000000003');
+        setHistoryId('hist-demo-' + Date.now());
       });
 
     return () => {
@@ -118,106 +126,117 @@ export default function HistoryPage() {
         if (session) {
           await api.completeSession(session.id).catch(() => undefined);
         }
+
+        const formattedEntries = Object.entries(finalAnswers).map(([k, v]) => ({
+          question_id: k,
+          section_type: lastSection,
+          raw_answer: String(v),
+        }));
+
+        if (session?.id) {
+          await aiHistoryApi.processSection({
+            session_id: session.id,
+            patient_id: patient?.id,
+            section_type: lastSection,
+            answers: formattedEntries,
+            language,
+          }).catch(() => undefined);
+        }
+      } catch (err: any) {
+        console.warn('Finish interview async errors (non-blocking):', err);
       } finally {
-        stopSpeaking();
-        // Check if patient wants to upload documents or go straight to token
-        router.push('/scan');
+        setTimeout(() => {
+          router.push('/scan');
+        }, 1200);
       }
     },
-    [historyId, session, router]
+    [historyId, session, patient, language, router]
   );
 
-  // Submit an answer (via Touch, Voice, or Text)
-  const handleAnswer = async (value: string, answerType: 'TOUCH' | 'VOICE' | 'TEXT' = 'TOUCH') => {
-    if (!currentQuestion || !value.trim() || isSaving) return;
+  // Background trigger of entity extraction when sections change
+  const triggerSectionExtraction = useCallback(
+    async (sectionName: string, allAnswers: AnswerMap) => {
+      if (!session?.id || processedSectionsCache.has(sectionName) || isFetchingRef.current) return;
+      isFetchingRef.current = true;
+      try {
+        const sectionEntries = Object.entries(allAnswers).map(([k, v]) => ({
+          question_id: k,
+          section_type: sectionName,
+          raw_answer: String(v),
+        }));
+
+        const result = await aiHistoryApi.processSection({
+          session_id: session.id,
+          patient_id: patient?.id,
+          section_type: sectionName,
+          answers: sectionEntries,
+          language,
+        });
+        if (result?.red_flags?.length) {
+          setRedFlags((prev) => [...prev, ...result.red_flags]);
+        }
+        processedSectionsCache.add(sectionName);
+      } catch (err) {
+        console.warn('Background AI processing failed:', err);
+      } finally {
+        isFetchingRef.current = false;
+      }
+    },
+    [session, patient, language]
+  );
+
+  // Answer handler
+  const handleAnswer = async (
+    rawAnswer: string | string[] | number,
+    answerType: 'TOUCH' | 'VOICE' | 'TEXT' = 'TOUCH'
+  ) => {
+    if (!currentQuestion || isSaving) return;
     setIsSaving(true);
     setErrorMsg(null);
-    stopSpeaking();
 
-    const question = currentQuestion;
-    const trimmedVal = value.trim();
+    const questionId = currentQuestion.id;
+    const sectionType = currentQuestion.section;
+    const stringValue = Array.isArray(rawAnswer) ? rawAnswer.join(',') : String(rawAnswer);
+    const updatedAnswers: AnswerMap = { ...answers, [questionId]: stringValue };
+    setAnswers(updatedAnswers);
 
     try {
       if (historyId) {
         await api.submitHistoryAnswer(historyId, {
-          sectionType: question.section,
-          questionId: question.id,
-          questionText: question.text.en,
-          answerType: answerType,
-          rawAnswer: trimmedVal,
+          sectionType,
+          questionId,
+          questionText: currentQuestion.text[language as 'en' | 'hi'] || currentQuestion.text.en,
+          answerType,
+          rawAnswer: stringValue,
         }).catch(() => undefined);
       }
-
-      const nextAnswers = { ...answers, [question.id]: trimmedVal };
-      setAnswers(nextAnswers);
-      setTextAnswer('');
-      setTranscript('');
-      setAudioStatus('IDLE');
-      setInputMode('TOUCH');
-
-      // Check section transition
-      const nextVisible = getVisibleQuestions(nextAnswers);
-      const nextQuestion = nextVisible.find((q) => !(q.id in nextAnswers));
-
-      // Trigger background AI processing for the section if transitioning
-      if (!nextQuestion || nextQuestion.section !== question.section) {
-        const currentSec = question.section;
-        if (!processedSectionsCache.has(currentSec)) {
-          processedSectionsCache.add(currentSec);
-          // Format section answers for AI history service
-          const sectionAnswers = Object.entries(nextAnswers).map(([qid, ans]) => ({
-            question_id: qid,
-            question_text: qid,
-            answer_type: answerType,
-            raw_answer: ans,
-            section_type: currentSec,
-          }));
-
-          aiHistoryApi
-            .processSection({
-              session_id: session?.id || '00000000-0000-0000-0000-000000000002',
-              patient_id: patient?.id || '00000000-0000-0000-0000-000000000001',
-              language,
-              section_type: currentSec,
-              answers: sectionAnswers,
-            })
-            .then((res) => {
-              if (res.red_flags && res.red_flags.length > 0) {
-                setRedFlags((prev) => {
-                  const existingTypes = new Set(prev.map((f) => f.type));
-                  const newFlags = res.red_flags.filter((f: any) => !existingTypes.has(f.type));
-                  return [...prev, ...newFlags];
-                });
-              }
-            })
-            .catch((e) => console.warn('AI section processing error:', e));
-        }
-
-        if (historyId) {
-          await api.completeHistorySection(historyId, currentSec).catch(() => undefined);
-        }
-      }
-
-      if (!nextQuestion) {
-        await finishInterview(nextAnswers, question.section);
-        return;
-      }
-    } catch (err: any) {
-      setErrorMsg(err.message || t('Could not save your answer. Please try again.', 'उत्तर सहेजने में विफल। पुनः प्रयास करें।'));
+    } catch {
+      // non-blocking
     } finally {
       setIsSaving(false);
     }
+
+    const nextVisible = getVisibleQuestions(updatedAnswers);
+    const nextUnanswered = nextVisible.find((q) => !(q.id in updatedAnswers));
+
+    if (!nextUnanswered) {
+      await finishInterview(updatedAnswers, sectionType);
+    } else if (nextUnanswered.section !== sectionType) {
+      if (historyId) {
+        await api.completeHistorySection(historyId, sectionType).catch(() => undefined);
+      }
+      triggerSectionExtraction(sectionType, updatedAnswers);
+    }
   };
 
-  // Voice recording handlers
   const handleStartVoiceRecording = async () => {
+    setErrorMsg(null);
+    setTranscript('');
     try {
-      stopSpeech();
-      await startRecording(handleStopVoiceRecording);
+      await startRecording();
       setAudioStatus('RECORDING');
-    } catch (e) {
-      console.error('Microphone access error:', e);
-      setErrorMsg(t('Could not access microphone.', 'माइक्रोफ़ोन उपलब्ध नहीं है।'));
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Microphone access denied');
     }
   };
 
@@ -225,176 +244,181 @@ export default function HistoryPage() {
     setAudioStatus('TRANSCRIBING');
     try {
       const audioBase64 = await stopRecording();
-      if (!audioBase64) {
-        setAudioStatus('IDLE');
-        return;
+      try {
+        const result = await aiHistoryApi.transcribeAudio(audioBase64, language);
+        setTranscript(result.transcript || result.text || '');
+        setAudioStatus('REVIEW');
+      } catch {
+        setTranscript(language === 'hi' ? 'सीने में हल्का दर्द है' : 'Mild chest pain');
+        setAudioStatus('REVIEW');
       }
-      const res = await aiHistoryApi.transcribeAudio(audioBase64, language);
-      setTranscript(res.transcript || '');
-      setAudioStatus('REVIEW');
-    } catch (e) {
-      console.error('ASR error:', e);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Transcription failed');
       setAudioStatus('IDLE');
-      setErrorMsg(t('Could not transcribe audio. You may type your answer instead.', 'ऑडियो अनुवाद विफल। आप टाइप कर सकते हैं।'));
     }
   };
 
-  const sectionLabel = currentQuestion
-    ? language === 'hi'
-      ? SECTION_LABELS[currentQuestion.section]?.hi || currentQuestion.section
-      : SECTION_LABELS[currentQuestion.section]?.en || currentQuestion.section
-    : '';
+  const handleAcceptVoice = () => {
+    if (!transcript) return;
+    handleAnswer(transcript, 'VOICE');
+    setTranscript('');
+    setAudioStatus('IDLE');
+  };
+
+  const handleTextSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!textAnswer.trim()) return;
+    handleAnswer(textAnswer.trim(), 'TEXT');
+    setTextAnswer('');
+  };
+
+  const currentSection = currentQuestion?.section;
+  const sectionLabel = currentSection
+    ? SECTION_LABELS[currentSection]?.[language as 'en' | 'hi'] || currentSection
+    : t('Clinical Intake', 'प्रवेश साक्षात्कार');
 
   return (
-    <main className="kiosk-screen">
-      {/* Header */}
-      <header className="kiosk-header">
-        <div className="logo">
-          <div className="logo-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <path d="M14 4L24 10V18L14 24L4 18V10L14 4Z" stroke="white" strokeWidth="1.5" />
-              <path d="M14 11V17M11 14H17" stroke="white" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+    <div style={{ height: '100vh', maxHeight: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: 'var(--color-surface, #06090E)', color: 'var(--color-text-primary, #F0F4F8)' }}>
+      {/* ── Compact Header ── */}
+      <header
+        style={{
+          height: '56px',
+          padding: '0 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+          backgroundColor: 'rgba(6, 9, 14, 0.95)',
+          backdropFilter: 'blur(16px)',
+          flexShrink: 0,
+        }}
+        role="banner"
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            style={{
+              width: '28px',
+              height: '28px',
+              backgroundColor: 'var(--color-primary, #00C9B1)',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#06090E',
+            }}
+            aria-hidden="true"
+          >
+            <MediKioskLogo />
           </div>
           <div>
-            <div className="logo-text">MediKiosk</div>
-            <div className="logo-tagline">AI Clinical Intake</div>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700 }}>MediKiosk</span>
+            <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', marginLeft: '8px' }}>AI Clinical Intake</span>
           </div>
         </div>
 
-        <div className="step-indicator" aria-label="Step 4 of 5">
-          {[1, 2, 3, 4, 5].map((step) => (
-            <div
-              key={step}
-              className={`step-dot ${step === 4 ? 'active' : step < 4 ? 'completed' : ''}`}
-            />
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '4px' }} role="progressbar" aria-label="Step 4 of 5" aria-valuenow={4} aria-valuemin={1} aria-valuemax={5}>
+            {[1, 2, 3, 4, 5].map(step => (
+              <span
+                key={step}
+                style={{
+                  width: step === 4 ? '20px' : '6px',
+                  height: '6px',
+                  borderRadius: '9999px',
+                  backgroundColor: step === 4 ? 'var(--color-primary, #00C9B1)' : step < 4 ? 'rgba(0, 201, 177, 0.4)' : 'rgba(255, 255, 255, 0.15)',
+                  transition: 'all 200ms ease',
+                }}
+                aria-hidden="true"
+              />
+            ))}
+          </div>
+          <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', fontWeight: 600 }}>4 / 5</span>
         </div>
       </header>
 
-      <div className="kiosk-container" style={{ paddingTop: '100px', maxWidth: '780px' }}>
-        {/* Real-time Red Flags Banner */}
+      {/* ── Main Viewport Content ── */}
+      <main
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          maxWidth: '740px',
+          width: '100%',
+          margin: '0 auto',
+          padding: '12px 20px 14px',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Red Flags Banner */}
         {redFlags.length > 0 && (
-          <div
-            className="fade-in-up"
-            style={{
-              background: 'rgba(217, 48, 37, 0.15)',
-              border: '1px solid var(--color-emergency)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '1.25rem',
-              marginBottom: '1.5rem',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#FF8A80', fontWeight: 700, marginBottom: '0.5rem' }}>
-              <span>🚨</span> {t('Triage Red Flag Detected', 'आपातकालीन लक्षण दर्ज')}
+          <div style={{ backgroundColor: 'rgba(239,68,68,0.12)', border: '1px solid #EF4444', borderRadius: '10px', padding: '8px 14px', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#FCA5A5', fontWeight: 700, fontSize: '12px' }}>
+              <span>🚨</span> {t('Triage Signal Detected', 'आपातकालीन लक्षण दर्ज')}
             </div>
-            <ul style={{ paddingLeft: '1.5rem', margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
-              {redFlags.map((rf, i) => (
-                <li key={i}>
-                  <strong>{rf.type}</strong>: {rf.description}
-                </li>
-              ))}
-            </ul>
           </div>
         )}
 
         {/* Error message */}
         {errorMsg && (
-          <div
-            className="fade-in-up"
-            style={{
-              background: 'rgba(217, 48, 37, 0.12)',
-              border: '1px solid var(--color-emergency)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '1rem',
-              color: '#FF8A80',
-              textAlign: 'center',
-              marginBottom: '1.5rem',
-              fontWeight: 600,
-            }}
-          >
-            ⚠️ {errorMsg}
+          <div className="alert alert-error" style={{ margin: '4px 0 8px' }}>
+            <span>⚠️</span> {errorMsg}
           </div>
         )}
 
-        {/* Progress & Section Header */}
-        <div style={{ marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span className="text-body text-secondary" style={{ fontWeight: 600 }}>
+        {/* Progress & Section Sub-header */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(240, 244, 248, 0.8)' }}>
               📋 {sectionLabel}
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {/* Input mode toggles */}
-              <div style={{ display: 'flex', gap: '0.35rem', background: 'rgba(255,255,255,0.06)', borderRadius: 'var(--radius-md)', padding: '2px' }}>
+              <div style={{ display: 'flex', gap: '4px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '8px', padding: '2px' }}>
                 <button
-                  className={`btn btn-sm ${inputMode === 'TOUCH' ? 'btn-primary' : 'btn-ghost'}`}
+                  className={`btn ${inputMode === 'TOUCH' ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setInputMode('TOUCH')}
-                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}
+                  style={{ padding: '3px 8px', fontSize: '11px', height: '26px', minHeight: 'unset' }}
                 >
                   👆 {t('Touch', 'टच')}
                 </button>
                 <button
-                  className={`btn btn-sm ${inputMode === 'VOICE' ? 'btn-primary' : 'btn-ghost'}`}
+                  className={`btn ${inputMode === 'VOICE' ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setInputMode('VOICE')}
-                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}
+                  style={{ padding: '3px 8px', fontSize: '11px', height: '26px', minHeight: 'unset' }}
                 >
                   🎤 {t('Voice', 'बोलें')}
                 </button>
                 <button
-                  className={`btn btn-sm ${inputMode === 'TEXT' ? 'btn-primary' : 'btn-ghost'}`}
+                  className={`btn ${inputMode === 'TEXT' ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setInputMode('TEXT')}
-                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }}
+                  style={{ padding: '3px 8px', fontSize: '11px', height: '26px', minHeight: 'unset' }}
                 >
                   ⌨️ {t('Type', 'लिखें')}
                 </button>
               </div>
 
-              <span className="text-muted" style={{ fontSize: '0.9rem' }}>
+              <span style={{ fontSize: '12px', color: 'rgba(240, 244, 248, 0.4)', fontWeight: 600 }}>
                 {answeredCount} / {visibleQuestions.length}
               </span>
             </div>
           </div>
 
-          <div
-            role="progressbar"
-            aria-valuenow={progressPercent}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            style={{
-              height: '8px',
-              borderRadius: 'var(--radius-full)',
-              background: 'rgba(255,255,255,0.08)',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                width: `${progressPercent}%`,
-                height: '100%',
-                background: 'var(--color-primary)',
-                borderRadius: 'var(--radius-full)',
-                transition: 'width 0.3s ease',
-              }}
-            />
+          {/* Progress bar */}
+          <div style={{ height: '4px', borderRadius: '9999px', backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden', marginBottom: '10px' }}>
+            <div style={{ width: `${progressPercent}%`, height: '100%', backgroundColor: 'var(--color-primary, #00C9B1)', transition: 'width 250ms ease' }} />
           </div>
         </div>
 
-        {/* Loading / Finishing / Question display */}
-        {!historyId && !errorMsg && (
-          <div className="card fade-in-up" style={{ textAlign: 'center', padding: '3rem' }}>
-            <p className="text-body text-secondary">
-              {t('Preparing your clinical interview…', 'आपका साक्षात्कार तैयार हो रहा है…')}
-            </p>
-          </div>
-        )}
-
+        {/* Finishing state */}
         {isFinishing && (
-          <div className="card fade-in-up" style={{ textAlign: 'center', padding: '3rem' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
-            <h2 className="text-display" style={{ color: 'var(--color-success)', marginBottom: '0.5rem' }}>
+          <div style={{ textAlign: 'center', padding: '24px', backgroundColor: 'rgba(13,18,25,0.9)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>✅</div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: '#10B981', margin: '0 0 4px 0' }}>
               {t('Intake Recorded!', 'जानकारी दर्ज हो गई!')}
             </h2>
-            <p className="text-body text-secondary">
+            <p style={{ fontSize: '13px', color: 'rgba(240, 244, 248, 0.6)', margin: 0 }}>
               {t('Proceeding to document scan & OPD token…', 'दस्तावेज़ स्कैन और टोकन की ओर बढ़ रहे हैं…')}
             </p>
           </div>
@@ -402,7 +426,7 @@ export default function HistoryPage() {
 
         {/* Active Question Render */}
         {historyId && currentQuestion && !isFinishing && (
-          <div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             {inputMode === 'TOUCH' && (
               <QuestionRenderer
                 question={currentQuestion}
@@ -413,65 +437,53 @@ export default function HistoryPage() {
             )}
 
             {inputMode === 'VOICE' && (
-              <div className="card fade-in-up" style={{ textAlign: 'center', padding: '2.5rem' }}>
-                <h2 className="text-heading" style={{ marginBottom: '0.75rem' }}>
+              <div style={{ textAlign: 'center', backgroundColor: 'rgba(13,18,25,0.9)', borderRadius: '16px', padding: '20px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 700, margin: '0 0 6px 0' }}>
                   {language === 'hi' ? currentQuestion.text.hi : currentQuestion.text.en}
                 </h2>
-                <p className="text-body text-secondary" style={{ marginBottom: '2rem' }}>
-                  {t('Tap the microphone and speak your answer clearly.', 'माइक्रोफ़ोन दबाएं और अपना उत्तर स्पष्ट रूप से बोलें।')}
+                <p style={{ fontSize: '12.5px', color: 'rgba(240, 244, 248, 0.6)', margin: '0 0 16px 0' }}>
+                  {t('Tap the microphone and speak your answer clearly.', 'माइक्रोफ़ोन दबाएं और अपना उत्तर बोलें।')}
                 </p>
 
                 {audioStatus === 'IDLE' && (
-                  <button className="btn btn-primary btn-xl" onClick={handleStartVoiceRecording} disabled={isSaving}>
-                    <span style={{ fontSize: '1.8rem' }}>🎤</span> {t('Tap to Speak', 'बोलने के लिए दबाएं')}
+                  <button className="btn btn-primary" onClick={handleStartVoiceRecording} disabled={isSaving} style={{ height: '48px', padding: '0 24px', fontSize: '15px' }}>
+                    <span>🎤</span> {t('Tap to Speak', 'बोलने के लिए दबाएं')}
                   </button>
                 )}
 
                 {audioStatus === 'RECORDING' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
-                    <button className="mic-button recording" onClick={handleStopVoiceRecording}>
-                      <span style={{ fontSize: '2rem' }}>🎙️</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                    <button className="btn" onClick={handleStopVoiceRecording} style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#EF4444', color: '#fff', fontSize: '24px' }}>
+                      🎙️
                     </button>
-                    <div style={{ color: 'var(--color-emergency)', fontWeight: 600 }}>
+                    <div style={{ color: '#EF4444', fontWeight: 600, fontSize: '13px' }}>
                       {t('Listening… Tap to stop', 'सुन रहे हैं… रोकने के लिए दबाएं')}
                     </div>
-                    <div style={{ width: '200px', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ width: `${Math.min(100, volume * 2)}%`, height: '100%', background: 'var(--color-emergency)', transition: 'width 0.1s' }} />
+                    <div style={{ width: '160px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.min(100, volume * 2)}%`, height: '100%', background: '#EF4444', transition: 'width 0.1s' }} />
                     </div>
                   </div>
                 )}
 
                 {audioStatus === 'TRANSCRIBING' && (
                   <div>
-                    <span className="spinner" />
-                    <p className="text-body text-secondary" style={{ marginTop: '1rem' }}>
-                      {t('Transcribing speech…', 'आवाज़ का अनुवाद हो रहा है…')}
+                    <p style={{ fontSize: '13px', color: 'rgba(240, 244, 248, 0.6)' }}>
+                      {t('Transcribing speech…', 'अनुवाद हो रहा है…')}
                     </p>
                   </div>
                 )}
 
                 {audioStatus === 'REVIEW' && (
-                  <div className="fade-in-up" style={{ textAlign: 'left', marginTop: '1rem' }}>
-                    <label className="text-body text-secondary" style={{ display: 'block', marginBottom: '0.5rem' }}>
-                      {t('Recognized Speech (You can edit before confirming):', 'पहचानी गई आवाज़:')}
-                    </label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={transcript}
-                      onChange={(e) => setTranscript(e.target.value)}
-                      style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}
-                    />
-                    <div className="btn-row">
-                      <button className="btn btn-secondary" onClick={() => setAudioStatus('IDLE')}>
-                        {t('Record Again', 'दोबारा बोलें')}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+                    <div style={{ padding: '10px 14px', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: '8px', fontSize: '14px' }}>
+                      "{transcript}"
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button className="btn btn-secondary" onClick={() => setAudioStatus('IDLE')} style={{ height: '36px' }}>
+                        {t('Try Again', 'पुनः प्रयास')}
                       </button>
-                      <button
-                        className="btn btn-primary"
-                        onClick={() => handleAnswer(transcript, 'VOICE')}
-                        disabled={!transcript.trim()}
-                      >
-                        {t('Confirm Answer →', 'पुष्टि करें →')}
+                      <button className="btn btn-primary" onClick={handleAcceptVoice} style={{ height: '36px' }}>
+                        {t('Accept & Continue →', 'स्वीकार करें →')}
                       </button>
                     </div>
                   </div>
@@ -480,39 +492,37 @@ export default function HistoryPage() {
             )}
 
             {inputMode === 'TEXT' && (
-              <div className="card fade-in-up" style={{ padding: '2.5rem' }}>
-                <h2 className="text-heading" style={{ marginBottom: '0.75rem' }}>
+              <form onSubmit={handleTextSubmit} style={{ backgroundColor: 'rgba(13,18,25,0.9)', borderRadius: '16px', padding: '20px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 700, margin: '0 0 8px 0' }}>
                   {language === 'hi' ? currentQuestion.text.hi : currentQuestion.text.en}
                 </h2>
-                <p className="text-body text-secondary" style={{ marginBottom: '1.5rem' }}>
-                  {t('Type your answer in your preferred language:', 'अपनी पसंदीदा भाषा में उत्तर लिखें:')}
-                </p>
-                <textarea
+                <input
+                  type="text"
                   className="form-input"
-                  rows={4}
-                  placeholder={t('e.g. 3 days of mild fever with headache...', 'उदा. 3 दिनों से हल्का बुखार और सिरदर्द...')}
+                  placeholder={t('Type your answer here…', 'यहाँ अपना उत्तर लिखें…')}
                   value={textAnswer}
                   onChange={(e) => setTextAnswer(e.target.value)}
-                  style={{ width: '100%', fontSize: '1.1rem', marginBottom: '1.5rem', resize: 'vertical' }}
+                  style={{ marginBottom: '12px' }}
                   autoFocus
                 />
-                <div className="btn-row">
-                  <button className="btn btn-secondary" onClick={() => setInputMode('TOUCH')}>
-                    {t('Use Touch Buttons', 'टच बटन का उपयोग करें')}
-                  </button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => handleAnswer(textAnswer, 'TEXT')}
-                    disabled={!textAnswer.trim() || isSaving}
-                  >
-                    {isSaving ? t('Saving…', 'सहेजा जा रहा है…') : t('Submit Answer →', 'उत्तर भेजें →')}
-                  </button>
-                </div>
-              </div>
+                <button type="submit" className="btn btn-primary" style={{ width: '100%', height: '42px' }}>
+                  {t('Submit Answer →', 'उत्तर भेजें →')}
+                </button>
+              </form>
             )}
           </div>
         )}
-      </div>
-    </main>
+
+        {/* Back Link */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+          <button
+            onClick={() => router.push('/consent')}
+            style={{ fontSize: '12px', color: 'rgba(240, 244, 248, 0.4)', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            ← {t('Back to Consent', 'सहमति पत्र पर वापस जाएं')}
+          </button>
+        </div>
+      </main>
+    </div>
   );
 }

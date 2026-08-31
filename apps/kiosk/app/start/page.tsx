@@ -2,180 +2,289 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
-// Language options supported by MediKiosk
 const LANGUAGES = [
-  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', emoji: '🇮🇳' },
-  { code: 'en', name: 'English', nativeName: 'English', emoji: '🇬🇧' },
-  { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்', emoji: '🇮🇳' },
-  { code: 'te', name: 'Telugu', nativeName: 'తెలుగు', emoji: '🇮🇳' },
-  { code: 'bn', name: 'Bengali', nativeName: 'বাংলা', emoji: '🇮🇳' },
-  { code: 'mr', name: 'Marathi', nativeName: 'मराठी', emoji: '🇮🇳' },
+  { code: 'hi', name: 'Hindi',   nativeName: 'हिन्दी',   script: 'देवनागरी', flag: '🇮🇳' },
+  { code: 'en', name: 'English', nativeName: 'English',  script: 'Latin',     flag: '🇬🇧' },
+  { code: 'ta', name: 'Tamil',   nativeName: 'தமிழ்',    script: 'Tamil',     flag: '🇮🇳' },
+  { code: 'te', name: 'Telugu',  nativeName: 'తెలుగు',   script: 'Telugu',    flag: '🇮🇳' },
+  { code: 'bn', name: 'Bengali', nativeName: 'বাংলা',    script: 'Bengali',   flag: '🇮🇳' },
+  { code: 'mr', name: 'Marathi', nativeName: 'मराठी',    script: 'Devanagari',flag: '🇮🇳' },
 ] as const;
+
+function MediKioskLogo() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M10 2L18 7V13L10 18L2 13V7L10 2Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+      <path d="M7 10h6M10 7v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export default function LanguageSelectionPage() {
   const router = useRouter();
   const [selected, setSelected] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLanguageSelect = (code: string) => {
-    setSelected(code);
-  };
-
   const handleContinue = async () => {
-    if (!selected) return;
+    if (!selected || isLoading) return;
     setIsLoading(true);
     sessionStorage.setItem('mk_lang', selected);
     router.push('/identify');
   };
 
   return (
-    <main className="kiosk-screen">
-      {/* Header */}
-      <header className="kiosk-header">
-        <div className="logo">
-          <div className="logo-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <path d="M14 4L24 10V18L14 24L4 18V10L14 4Z" stroke="white" strokeWidth="1.5" fill="none" />
-              <path d="M14 11V17M11 14H17" stroke="white" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+    <div style={{ height: '100vh', maxHeight: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: 'var(--color-surface, #06090E)', color: 'var(--color-text-primary, #F0F4F8)' }}>
+      {/* ── Compact Fixed Header ── */}
+      <header
+        style={{
+          height: '56px',
+          padding: '0 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+          backgroundColor: 'rgba(6, 9, 14, 0.95)',
+          backdropFilter: 'blur(16px)',
+          flexShrink: 0,
+        }}
+        role="banner"
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            style={{
+              width: '28px',
+              height: '28px',
+              backgroundColor: 'var(--color-primary, #00C9B1)',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#06090E',
+            }}
+            aria-hidden="true"
+          >
+            <MediKioskLogo />
           </div>
           <div>
-            <div className="logo-text">MediKiosk</div>
-            <div className="logo-tagline">AI Clinical Intake</div>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700 }}>MediKiosk</span>
+            <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', marginLeft: '8px' }}>AI Clinical Intake</span>
           </div>
         </div>
 
-        <div className="step-indicator" aria-label="Step 1 of 5">
-          {[1, 2, 3, 4, 5].map((step) => (
-            <div
-              key={step}
-              className={`step-dot ${step === 1 ? 'active' : ''}`}
-              aria-hidden="true"
-            />
-          ))}
+        {/* Step progress */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '4px' }} role="progressbar" aria-label="Step 1 of 5" aria-valuenow={1} aria-valuemin={1} aria-valuemax={5}>
+            {[1, 2, 3, 4, 5].map(step => (
+              <span
+                key={step}
+                style={{
+                  width: step === 1 ? '20px' : '6px',
+                  height: '6px',
+                  borderRadius: '9999px',
+                  backgroundColor: step === 1 ? 'var(--color-primary, #00C9B1)' : 'rgba(255, 255, 255, 0.15)',
+                  transition: 'all 200ms ease',
+                }}
+                aria-hidden="true"
+              />
+            ))}
+          </div>
+          <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', fontWeight: 600 }}>1 / 5</span>
         </div>
       </header>
 
-      {/* Main content */}
-      <div className="kiosk-container" style={{ paddingTop: '100px' }}>
-
-        {/* Welcome heading */}
-        <div className="fade-in-up" style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <h1 className="text-display" style={{ marginBottom: '1rem' }}>
-            Welcome to <span className="text-primary-color">MediKiosk</span>
-          </h1>
-          <p className="text-body text-secondary" style={{ maxWidth: '560px', margin: '0 auto' }}>
-            Please select your preferred language to begin your medical history.
+      {/* ── Main Viewport Content (Flex Container - No Scroll) ── */}
+      <main
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          maxWidth: '820px',
+          width: '100%',
+          margin: '0 auto',
+          padding: '16px 20px 12px',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Top: Welcome & Heading */}
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-primary, #00C9B1)', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 2px 0' }}>
+            Welcome · स्वागत है · வரவேற்பு
           </p>
-          <p className="text-body text-muted" style={{ marginTop: '0.5rem', fontSize: '1.1rem' }}>
-            कृपया अपनी भाषा चुनें &bull; Please choose your language
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 3vh, 32px)', fontWeight: 800, margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>
+            Choose your <span style={{ color: 'var(--color-primary, #00C9B1)' }}>language</span>
+          </h1>
+          <p style={{ fontSize: '13px', color: 'rgba(240, 244, 248, 0.65)', margin: 0 }}>
+            Select your preferred language to begin · कृपया अपनी भाषा चुनें
           </p>
         </div>
 
-        {/* Language grid */}
+        {/* Middle: Compact 2x3 Language Grid */}
         <div
-          className="fade-in-up fade-in-up-delay-1"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '1rem',
-            marginBottom: '2rem',
+            gap: '10px',
+            margin: '8px 0',
           }}
           role="radiogroup"
           aria-label="Language selection"
         >
-          {LANGUAGES.map((lang) => (
-            <button
-              key={lang.code}
-              className={`lang-card ${selected === lang.code ? 'selected' : ''}`}
-              onClick={() => handleLanguageSelect(lang.code)}
-              role="radio"
-              aria-checked={selected === lang.code}
-              aria-label={`${lang.name} — ${lang.nativeName}`}
-            >
-              <span className="lang-card-emoji" aria-hidden="true">
-                {lang.emoji}
-              </span>
-              <span className="lang-card-native">{lang.nativeName}</span>
-              <span className="lang-card-name" style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--color-text-secondary)' }}>
-                {lang.name}
-              </span>
-              {selected === lang.code && (
-                <span aria-hidden="true" style={{ fontSize: '1.2rem' }}>✓</span>
-              )}
-            </button>
-          ))}
+          {LANGUAGES.map(lang => {
+            const isSelected = selected === lang.code;
+            return (
+              <button
+                key={lang.code}
+                onClick={() => setSelected(lang.code)}
+                role="radio"
+                aria-checked={isSelected}
+                aria-label={`${lang.name} — ${lang.nativeName}`}
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 'clamp(72px, 11vh, 90px)',
+                  padding: '8px 12px',
+                  backgroundColor: isSelected ? 'rgba(0, 201, 177, 0.12)' : 'rgba(255, 255, 255, 0.03)',
+                  border: `1.5px solid ${isSelected ? 'var(--color-primary, #00C9B1)' : 'rgba(255, 255, 255, 0.08)'}`,
+                  borderRadius: '12px',
+                  boxShadow: isSelected ? '0 0 0 3px rgba(0, 201, 177, 0.2), 0 4px 16px rgba(0, 201, 177, 0.15)' : 'none',
+                  cursor: 'pointer',
+                  transition: 'all 150ms ease',
+                  outline: 'none',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                  <span style={{ fontSize: '16px', lineHeight: 1 }}>{lang.flag}</span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 700, color: '#F0F4F8' }}>
+                    {lang.nativeName}
+                  </span>
+                </div>
+                <span style={{ fontSize: '12px', color: isSelected ? 'var(--color-primary, #00C9B1)' : 'rgba(240, 244, 248, 0.45)', fontWeight: 500 }}>
+                  {lang.name}
+                </span>
+
+                {isSelected && (
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      top: '6px',
+                      right: '6px',
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      backgroundColor: 'var(--color-primary, #00C9B1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#06090E',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                    }}
+                  >
+                    ✓
+                  </div>
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Continue button */}
-        <div className="fade-in-up fade-in-up-delay-2">
+        {/* Action: Continue Button */}
+        <div>
           <button
-            className={`btn btn-primary btn-xl ${!selected || isLoading ? 'btn-disabled' : ''}`}
             onClick={handleContinue}
             disabled={!selected || isLoading}
             aria-label="Continue to patient identification"
             style={{
-              opacity: selected ? 1 : 0.4,
+              width: '100%',
+              height: '46px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              backgroundColor: 'var(--color-primary, #00C9B1)',
+              color: '#06090E',
+              fontFamily: 'var(--font-display)',
+              fontSize: '15px',
+              fontWeight: 700,
+              borderRadius: '10px',
+              border: 'none',
               cursor: selected ? 'pointer' : 'not-allowed',
+              opacity: selected ? 1 : 0.35,
+              transition: 'all 150ms ease',
+              boxShadow: selected ? '0 4px 16px rgba(0, 201, 177, 0.25)' : 'none',
             }}
           >
             {isLoading ? (
-              <>
-                <span aria-hidden="true">⟳</span>
-                Loading...
-              </>
+              <span>Setting language…</span>
             ) : (
               <>
-                Continue
-                <span aria-hidden="true" style={{ marginLeft: '0.5rem' }}>→</span>
+                <span>Continue</span>
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </>
             )}
           </button>
         </div>
 
-        {/* Privacy notice */}
-        <div
-          className="fade-in-up fade-in-up-delay-3"
-          style={{ textAlign: 'center', marginTop: '1.5rem' }}
-        >
-          <p className="text-muted" style={{ fontSize: '0.875rem', lineHeight: 1.5 }}>
-            🔒 Your information is confidential and protected.
-            <br />
-            आपकी जानकारी गोपनीय और सुरक्षित है।
-          </p>
-        </div>
-
-        {/* Emergency assistance */}
-        <div
-          className="fade-in-up fade-in-up-delay-4"
-          style={{
-            marginTop: '2rem',
-            padding: '1rem',
-            background: 'rgba(217, 48, 37, 0.08)',
-            border: '1px solid rgba(217, 48, 37, 0.2)',
-            borderRadius: 'var(--radius-lg)',
-            textAlign: 'center',
-          }}
-        >
-          <p style={{ color: '#FF6B6B', fontSize: '0.875rem', fontWeight: 600 }}>
-            🚨 If you have a medical emergency, please alert the staff immediately.
-          </p>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginTop: '0.25rem' }}>
-            यदि आपको चिकित्सा आपातकाल है, तो तुरंत कर्मचारियों को सूचित करें।
-          </p>
-        </div>
-
-        {/* Back to home link */}
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-          <a
-            href="/"
-            style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', textDecoration: 'none' }}
+        {/* Bottom: Notices & Navigation link */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+          <div
+            style={{
+              padding: '6px 12px',
+              backgroundColor: 'rgba(16, 185, 129, 0.06)',
+              border: '1px solid rgba(16, 185, 129, 0.15)',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+            role="note"
           >
-            ← Back to MediKiosk Home
-          </a>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', flexShrink: 0 }} />
+            <p style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.75)', margin: 0, lineHeight: 1.4 }}>
+              <strong>Confidential & secure intake.</strong> आपकी जानकारी गोपनीय और सुरक्षित है।
+            </p>
+          </div>
+
+          <div
+            style={{
+              padding: '6px 12px',
+              backgroundColor: 'rgba(239, 68, 68, 0.06)',
+              border: '1px solid rgba(239, 68, 68, 0.15)',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+            role="alert"
+          >
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#EF4444', flexShrink: 0 }} />
+            <p style={{ fontSize: '11px', color: '#FCA5A5', margin: 0, lineHeight: 1.4 }}>
+              <strong>Medical emergency?</strong> Please alert hospital staff immediately. / चिकित्सा आपात: कर्मचारियों को सूचित करें।
+            </p>
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: '2px' }}>
+            <Link
+              href="/"
+              style={{ fontSize: '12px', color: 'rgba(240, 244, 248, 0.4)', textDecoration: 'none', transition: 'color 150ms' }}
+              onMouseOver={e => (e.currentTarget.style.color = 'rgba(240, 244, 248, 0.8)')}
+              onMouseOut={e => (e.currentTarget.style.color = 'rgba(240, 244, 248, 0.4)')}
+            >
+              ← Back to MediKiosk Home
+            </Link>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

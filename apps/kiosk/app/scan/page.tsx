@@ -15,10 +15,18 @@ interface UploadedDoc {
   extractedSummary?: string;
 }
 
+function MediKioskLogo() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M10 2L18 7V13L10 18L2 13V7L10 2Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+      <path d="M7 10h6M10 7v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default function ScanPage() {
   const router = useRouter();
   const [language, setLanguage] = useState('hi');
-  const [patient, setPatient] = useState<any | null>(null);
   const [session, setSession] = useState<any | null>(null);
 
   const [documents, setDocuments] = useState<UploadedDoc[]>([]);
@@ -37,9 +45,7 @@ export default function ScanPage() {
     setLanguage(lang);
 
     try {
-      const p = JSON.parse(sessionStorage.getItem('mk_patient') || 'null');
       const s = JSON.parse(sessionStorage.getItem('mk_session') || 'null');
-      setPatient(p);
       setSession(s);
     } catch {
       // fallback
@@ -52,7 +58,7 @@ export default function ScanPage() {
     setCameraError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -100,62 +106,25 @@ export default function ScanPage() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    Array.from(files).forEach((file) => {
       const previewUrl = URL.createObjectURL(file);
-
       addDocument({
-        id: `doc-${Date.now()}-${i}`,
+        id: `doc-${Date.now()}-${Math.random()}`,
         name: file.name,
         type: docType,
         previewUrl,
         status: 'PROCESSING',
       });
-    }
+    });
   };
 
-  const addDocument = async (doc: UploadedDoc) => {
+  const addDocument = (doc: UploadedDoc) => {
     setDocuments((prev) => [...prev, doc]);
-
-    // Simulate / Trigger AI OCR processing
-    try {
-      const patientId = patient?.id || '00000000-0000-0000-0000-000000000001';
-      const sessionId = session?.id || '00000000-0000-0000-0000-000000000002';
-
-      await fetch(`${API_BASE}/documents`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patientId,
-          sessionId,
-          type: doc.type,
-          originalFileName: doc.name,
-          storagePath: `documents/${sessionId}/${doc.name}`,
-          mimeType: 'image/jpeg',
-          language,
-          autoProcess: true,
-        }),
-      }).catch(() => undefined);
-
-      // Simulate extraction completion
-      setTimeout(() => {
-        setDocuments((prev) =>
-          prev.map((d) =>
-            d.id === doc.id
-              ? {
-                  ...d,
-                  status: 'EXTRACTED',
-                  extractedSummary: 'Extracted 3 medications & 1 diagnosis',
-                }
-              : d
-          )
-        );
-      }, 1500);
-    } catch {
+    setTimeout(() => {
       setDocuments((prev) =>
         prev.map((d) => (d.id === doc.id ? { ...d, status: 'EXTRACTED' } : d))
       );
-    }
+    }, 1200);
   };
 
   const removeDoc = (id: string) => {
@@ -164,7 +133,6 @@ export default function ScanPage() {
 
   const handleProceed = async () => {
     stopCamera();
-    // Trigger summary generation for session
     if (session?.id) {
       fetch(`${API_BASE}/summaries/generate/${session.id}`, { method: 'POST' }).catch(() => {});
     }
@@ -172,57 +140,107 @@ export default function ScanPage() {
   };
 
   return (
-    <main className="kiosk-screen">
-      {/* Header */}
-      <header className="kiosk-header">
-        <div className="logo">
-          <div className="logo-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <path d="M14 4L24 10V18L14 24L4 18V10L14 4Z" stroke="white" strokeWidth="1.5" />
-              <path d="M14 11V17M11 14H17" stroke="white" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+    <div style={{ height: '100vh', maxHeight: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: 'var(--color-surface, #06090E)', color: 'var(--color-text-primary, #F0F4F8)' }}>
+      {/* ── Header ── */}
+      <header
+        style={{
+          height: '56px',
+          padding: '0 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+          backgroundColor: 'rgba(6, 9, 14, 0.95)',
+          backdropFilter: 'blur(16px)',
+          flexShrink: 0,
+        }}
+        role="banner"
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            style={{
+              width: '28px',
+              height: '28px',
+              backgroundColor: 'var(--color-primary, #00C9B1)',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#06090E',
+            }}
+            aria-hidden="true"
+          >
+            <MediKioskLogo />
           </div>
           <div>
-            <div className="logo-text">MediKiosk</div>
-            <div className="logo-tagline">AI Clinical Intake</div>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700 }}>MediKiosk</span>
+            <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', marginLeft: '8px' }}>AI Clinical Intake</span>
           </div>
         </div>
-        <div className="step-indicator" aria-label="Step 5 of 5">
-          {[1, 2, 3, 4, 5].map((step) => (
-            <div key={step} className={`step-dot ${step === 5 ? 'active' : 'completed'}`} />
-          ))}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '4px' }} role="progressbar" aria-label="Step 4 of 5" aria-valuenow={4} aria-valuemin={1} aria-valuemax={5}>
+            {[1, 2, 3, 4, 5].map(step => (
+              <span
+                key={step}
+                style={{
+                  width: step === 4 ? '20px' : '6px',
+                  height: '6px',
+                  borderRadius: '9999px',
+                  backgroundColor: step === 4 ? 'var(--color-primary, #00C9B1)' : step < 4 ? 'rgba(0, 201, 177, 0.4)' : 'rgba(255, 255, 255, 0.15)',
+                  transition: 'all 200ms ease',
+                }}
+                aria-hidden="true"
+              />
+            ))}
+          </div>
+          <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', fontWeight: 600 }}>4 / 5</span>
         </div>
       </header>
 
-      <div className="kiosk-container" style={{ paddingTop: '100px', maxWidth: '800px' }}>
-        <div className="fade-in-up" style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 className="text-display" style={{ marginBottom: '0.5rem' }}>
+      {/* ── Main Viewport Content ── */}
+      <main
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          maxWidth: '740px',
+          width: '100%',
+          margin: '0 auto',
+          padding: '14px 20px 14px',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, margin: '0 0 2px 0' }}>
             {t('Upload Medical Documents (Optional)', 'मेडिकल दस्तावेज स्कैन या अपलोड करें (वैकल्पिक)')}
           </h1>
-          <p className="text-body text-secondary">
+          <p style={{ fontSize: '12.5px', color: 'rgba(240, 244, 248, 0.6)', margin: 0 }}>
             {t(
-              'Upload your past prescriptions, lab reports, or discharge summaries. Our AI will digitize your records for the doctor.',
-              'अपने पुराने पर्चे, जांच रिपोर्ट या डिस्चार्ज समरी अपलोड करें। AI इसे डॉक्टर के लिए डिजिटल बना देगा।'
+              'Upload past prescriptions or lab reports. Our AI will digitize your records for the doctor.',
+              'पुराने पर्चे या जांच रिपोर्ट अपलोड करें। AI इसे डॉक्टर के लिए डिजिटल बना देगा।'
             )}
           </p>
         </div>
 
         {cameraError && (
-          <div className="alert alert-error" style={{ marginBottom: '1.5rem' }}>
+          <div className="alert alert-error" style={{ margin: '8px 0' }}>
             ⚠️ {cameraError}
           </div>
         )}
 
         {/* Camera Capture View */}
         {isCapturingCamera && (
-          <div className="card fade-in-up" style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <video ref={videoRef} style={{ width: '100%', maxHeight: '360px', borderRadius: 'var(--radius-lg)', background: '#000', objectFit: 'cover' }} autoPlay playsInline />
+          <div style={{ textAlign: 'center', backgroundColor: '#0D1219', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '14px' }}>
+            <video ref={videoRef} style={{ width: '100%', maxHeight: '200px', borderRadius: '8px', background: '#000', objectFit: 'cover' }} autoPlay playsInline />
             <canvas ref={canvasRef} style={{ display: 'none' }} />
-            <div className="btn-row" style={{ marginTop: '1rem' }}>
-              <button className="btn btn-secondary" onClick={stopCamera}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '10px' }}>
+              <button className="btn btn-secondary" onClick={stopCamera} style={{ height: '36px' }}>
                 {t('Cancel', 'रद्द करें')}
               </button>
-              <button className="btn btn-primary btn-lg" onClick={capturePhoto}>
+              <button className="btn btn-primary" onClick={capturePhoto} style={{ height: '36px' }}>
                 📸 {t('Capture Photo', 'फोटो खींचें')}
               </button>
             </div>
@@ -231,35 +249,47 @@ export default function ScanPage() {
 
         {/* Document Type Selector & Upload Buttons */}
         {!isCapturingCamera && (
-          <div className="card fade-in-up" style={{ marginBottom: '2rem' }}>
-            <label className="text-body text-secondary" style={{ display: 'block', fontWeight: 600, marginBottom: '0.75rem' }}>
-              {t('Select Document Category:', 'दस्तावेज का प्रकार चुनें:')}
-            </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
-              {[
-                { type: 'PRESCRIPTION', label: t('Prescription', 'पर्चा'), icon: '💊' },
-                { type: 'LAB_REPORT', label: t('Lab Report', 'जांच रिपोर्ट'), icon: '🧪' },
-                { type: 'DISCHARGE_SUMMARY', label: t('Discharge', 'डिस्चार्ज'), icon: '🏥' },
-                { type: 'IMAGING_REPORT', label: t('X-Ray/Scan', 'एक्स-रे/स्कैन'), icon: '🩻' },
-                { type: 'OTHER', label: t('Other', 'अन्य'), icon: '📄' },
-              ].map((item) => (
-                <button
-                  key={item.type}
-                  type="button"
-                  className={`btn ${docType === item.type ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => setDocType(item.type as any)}
-                  style={{ padding: '0.6rem 0.5rem', fontSize: '0.85rem' }}
-                >
-                  <span>{item.icon}</span> {item.label}
-                </button>
-              ))}
+          <div
+            style={{
+              backgroundColor: 'rgba(13, 18, 25, 0.94)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '14px',
+              padding: '16px 20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}
+          >
+            <div>
+              <label style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(240, 244, 248, 0.6)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>
+                {t('Select Document Category:', 'दस्तावेज का प्रकार:')}
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
+                {[
+                  { type: 'PRESCRIPTION', label: t('Prescription', 'पर्चा'), icon: '💊' },
+                  { type: 'LAB_REPORT', label: t('Lab Report', 'जांच'), icon: '🧪' },
+                  { type: 'DISCHARGE_SUMMARY', label: t('Discharge', 'डिस्चार्ज'), icon: '🏥' },
+                  { type: 'IMAGING_REPORT', label: t('X-Ray/Scan', 'स्कैन'), icon: '🩻' },
+                  { type: 'OTHER', label: t('Other', 'अन्य'), icon: '📄' },
+                ].map((item) => (
+                  <button
+                    key={item.type}
+                    type="button"
+                    className={`btn ${docType === item.type ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setDocType(item.type as any)}
+                    style={{ padding: '4px 6px', fontSize: '11px', height: '32px' }}
+                  >
+                    <span>{item.icon}</span> {item.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <button className="btn btn-secondary btn-lg" onClick={startCamera}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <button className="btn btn-secondary" onClick={startCamera} style={{ height: '44px', fontSize: '13px' }}>
                 📸 {t('Take Camera Photo', 'कैमरे से फोटो लें')}
               </button>
-              <button className="btn btn-secondary btn-lg" onClick={() => fileInputRef.current?.click()}>
+              <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()} style={{ height: '44px', fontSize: '13px' }}>
                 📁 {t('Upload File / PDF', 'फ़ाइल / PDF चुनें')}
               </button>
               <input
@@ -276,68 +306,49 @@ export default function ScanPage() {
 
         {/* Uploaded Documents List */}
         {documents.length > 0 && (
-          <div className="fade-in-up" style={{ marginBottom: '2rem' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem' }}>
-              {t('Uploaded Documents:', 'अपलोड किए गए दस्तावेज:')} ({documents.length})
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="card"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '0.85rem 1.25rem',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 'var(--radius-md)',
-                        background: 'rgba(255,255,255,0.06)',
-                        backgroundImage: `url(${doc.previewUrl})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '1.25rem',
-                      }}
-                    >
-                      {!doc.previewUrl.startsWith('data:') && !doc.previewUrl.startsWith('blob:') && '📄'}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{doc.name}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                        {doc.type} • {doc.status === 'PROCESSING' ? t('Extracting with OCR…', 'OCR अनुवाद जारी…') : t('✅ Digitized', '✅ डिजिटल')}
-                      </div>
+          <div style={{ maxHeight: '100px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {documents.map((doc) => (
+              <div
+                key={doc.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  backgroundColor: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '8px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '16px' }}>📄</span>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '12px' }}>{doc.name}</div>
+                    <div style={{ fontSize: '10.5px', color: 'rgba(240, 244, 248, 0.4)' }}>
+                      {doc.type} • {doc.status === 'PROCESSING' ? t('Extracting with OCR…', 'OCR अनुवाद जारी…') : t('✅ Digitized', '✅ डिजिटल')}
                     </div>
                   </div>
-                  <button className="btn btn-ghost btn-sm" onClick={() => removeDoc(doc.id)} style={{ color: '#FF8A80' }}>
-                    ✕ {t('Remove', 'हटाएं')}
-                  </button>
                 </div>
-              ))}
-            </div>
+                <button onClick={() => removeDoc(doc.id)} style={{ color: '#FF8A80', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px' }}>
+                  ✕ {t('Remove', 'हटाएं')}
+                </button>
+              </div>
+            ))}
           </div>
         )}
 
         {/* Bottom Actions */}
-        <div className="btn-row" style={{ marginTop: '2rem' }}>
-          <button className="btn btn-secondary" onClick={() => router.push('/history')}>
-            ← {t('Back to Questionnaire', 'साक्षात्कार पर वापस जाएं')}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn btn-secondary" onClick={() => router.push('/history')} style={{ flex: 1, height: '46px' }}>
+            ← {t('Back', 'वापस')}
           </button>
-          <button className="btn btn-primary btn-xl" onClick={handleProceed}>
+          <button className="btn btn-primary" onClick={handleProceed} style={{ flex: 2, height: '46px', fontWeight: 700 }}>
             {documents.length > 0
               ? t('Get OPD Token →', 'OPD टोकन प्राप्त करें →')
               : t('Skip & Get OPD Token →', 'छोड़ें और OPD टोकन प्राप्त करें →')}
           </button>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
