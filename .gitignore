@@ -67,3 +67,8 @@ htmlcov/
 
 # TypeScript
 *.tsbuildinfo
+
+
+#test image
+services/ai-documents/test-image
+services/ai-documents/test-ocr.py

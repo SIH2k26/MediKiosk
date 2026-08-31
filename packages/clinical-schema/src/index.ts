@@ -150,6 +150,7 @@ export const MedicationSchema = z.object({
   prescribedBy: z.string().optional(),
   isCurrentlyTaking: z.boolean(),
   sourceDocumentId: z.string().uuid().optional(),
+  pageNumber: z.number().int().optional(),
 });
 
 export const AllergySchema = z.object({
@@ -158,6 +159,7 @@ export const AllergySchema = z.object({
   reaction: z.string().optional(),
   severity: z.enum(['MILD', 'MODERATE', 'SEVERE', 'ANAPHYLAXIS']).optional(),
   sourceDocumentId: z.string().uuid().optional(),
+  pageNumber: z.number().int().optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -182,6 +184,7 @@ export const InvestigationSchema = z.object({
   isAbnormal: z.boolean().optional(),
   notes: z.string().optional(),
   sourceDocumentId: z.string().uuid().optional(),
+  pageNumber: z.number().int().optional(),
   extractedByAI: z.boolean().default(false),
   confidence: z.number().min(0).max(1).optional(),
 });

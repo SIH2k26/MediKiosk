@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
     langfuse_host: str = "https://cloud.langfuse.com"
+    sarvam_api_key: str
 
     class Config:
         env_file = ".env"
