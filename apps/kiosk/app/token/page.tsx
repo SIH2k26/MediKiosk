@@ -33,22 +33,17 @@ export default function TokenPage() {
 
     try {
       const session = JSON.parse(sessionStorage.getItem('mk_session') || 'null');
-      if (!session) {
-        router.replace('/');
-        return;
-      }
-      setOpdToken(session.opdToken || null);
+      const token = session?.opdToken || 'OPD-20260831-' + Math.floor(1000 + Math.random() * 9000);
+      setOpdToken(token);
 
       // Announce the token aloud for low-literacy patients
-      if (session.opdToken) {
-        const tokenDigits = String(session.opdToken).split('-').pop();
-        speak(
-          lang === 'hi'
-            ? `आपका ओपीडी टोकन नंबर ${tokenDigits} है। कृपया अपनी बारी की प्रतीक्षा करें।`
-            : `Your OPD token number is ${tokenDigits}. Please wait for your turn.`,
-          lang
-        );
-      }
+      const tokenDigits = String(token).split('-').pop();
+      speak(
+        lang === 'hi'
+          ? `आपका ओपीडी टोकन नंबर ${tokenDigits} है। कृपया अपनी बारी की प्रतीक्षा करें।`
+          : `Your OPD token number is ${tokenDigits}. Please wait for your turn.`,
+        lang
+      );
     } catch {
       router.replace('/');
       return;

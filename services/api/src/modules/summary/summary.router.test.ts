@@ -11,6 +11,7 @@ jest.mock('@google/generative-ai');
 jest.mock('../../utils/supabase');
 jest.mock('../../middleware/auth', () => ({
   requireAuth: (req: any, res: any, next: any) => next(),
+  optionalAuth: (req: any, res: any, next: any) => next(),
   requireRole: () => (req: any, res: any, next: any) => next(),
 }));
 
@@ -29,6 +30,8 @@ describe('POST /api/summaries/generate/:sessionId', () => {
     mockSupabase.from = jest.fn().mockReturnValue(mockSupabase);
     mockSupabase.insert = jest.fn().mockReturnValue(mockSupabase);
     mockSupabase.select = jest.fn().mockReturnValue(mockSupabase);
+    mockSupabase.eq = jest.fn().mockReturnValue(mockSupabase);
+    mockSupabase.order = jest.fn().mockReturnValue(mockSupabase);
     (createSupabaseServiceClient as jest.Mock).mockReturnValue(mockSupabase);
 
     mockGenerativeModel = {
@@ -96,7 +99,7 @@ describe('POST /api/summaries/generate/:sessionId', () => {
     expect(response.body.success).toBe(true);
     expect(response.body.data.summaryId).toBe('summary-123');
     expect(response.body.data.status).toBe('draft_ai');
-    
+
     // Assert insertion data has traceability
     expect(mockSupabase.insert).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -16,9 +16,17 @@ import json
 import logging
 from typing import Any, Callable, Optional
 
-from google import genai
-from google.genai import types as genai_types
-from openai import AsyncOpenAI
+try:
+    from google import genai
+    from google.genai import types as genai_types
+except ImportError:
+    genai = None
+    genai_types = None
+
+try:
+    from openai import AsyncOpenAI
+except ImportError:
+    AsyncOpenAI = None
 
 from app.config import settings
 

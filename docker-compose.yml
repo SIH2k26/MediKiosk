@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # ─── 1. Express Backend API (Port 4000) ─────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    container_name: medikiosk-api
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - NODE_ENV=production
+      - SUPABASE_URL=${SUPABASE_URL:-http://localhost:54321}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-your_service_role_key}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-your_anon_key}
+      - AI_HISTORY_URL=http://ai-history:8000
+      - AI_DOCUMENTS_URL=http://ai-documents:8001
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - SMS_PROVIDER=${SMS_PROVIDER:-mock}
+    depends_on:
+      - ai-history
+      - ai-documents
+    restart: unless-stopped
+
+  # ─── 2. AI History & Dialogue Service (FastAPI - Port 8000) ─────────────────
+  ai-history:
+    build:
+      context: .
+      dockerfile: services/ai-history/Dockerfile
+    container_name: medikiosk-ai-history
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - SARVAM_API_KEY=${SARVAM_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - SUPABASE_URL=${SUPABASE_URL:-http://localhost:54321}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-your_service_role_key}
+    restart: unless-stopped
+
+  # ─── 3. AI Documents & OCR Service (FastAPI - Port 8001) ────────────────────
+  ai-documents:
+    build:
+      context: .
+      dockerfile: services/ai-documents/Dockerfile
+    container_name: medikiosk-ai-documents
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - SARVAM_API_KEY=${SARVAM_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - SUPABASE_URL=${SUPABASE_URL:-http://localhost:54321}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-your_service_role_key}
+    restart: unless-stopped
+
+  # ─── 4. Patient Kiosk Next.js App (Port 3000) ───────────────────────────────
+  kiosk:
+    build:
+      context: .
+      dockerfile: apps/kiosk/Dockerfile
+    container_name: medikiosk-kiosk
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL:-http://localhost:54321}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-your_anon_key}
+      - NEXT_PUBLIC_API_URL=http://localhost:4000/api
+      - NEXT_PUBLIC_AI_HISTORY_URL=http://localhost:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # ─── 5. Doctor Portal Next.js App (Port 3001) ───────────────────────────────
+  doctor:
+    build:
+      context: .
+      dockerfile: apps/doctor/Dockerfile
+    container_name: medikiosk-doctor
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL:-http://localhost:54321}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-your_anon_key}
+      - NEXT_PUBLIC_API_URL=http://localhost:4000/api
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # ─── 6. Admin Panel Next.js App (Port 3002) ─────────────────────────────────
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    container_name: medikiosk-admin
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL:-http://localhost:54321}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-your_anon_key}
+      - NEXT_PUBLIC_API_URL=http://localhost:4000/api
+    depends_on:
+      - api
+    restart: unless-stopped

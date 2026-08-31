@@ -3,7 +3,10 @@ import base64
 import logging
 import re
 
-import httpx
+try:
+    import httpx
+except ImportError:
+    httpx = None
 
 from app.config import settings
 from app.media import normalize_audio_format

@@ -30,11 +30,18 @@ export type DocumentStatus =
   | 'FAILED'
   | 'REQUIRES_REVIEW';
 
-export type ConsentStatus = 'PENDING' | 'GRANTED' | 'REVOKED';
+export type ConsentStatus = 'PENDING' | 'GRANTED' | 'REVOKED' | 'DECLINED';
 
 export type SessionStatus = 'ACTIVE' | 'COMPLETED' | 'ABANDONED' | 'EXPIRED';
 
-export type SummaryStatus = 'GENERATING' | 'READY' | 'DOCTOR_REVIEWING' | 'CONFIRMED' | 'REJECTED';
+export type SummaryStatus =
+  | 'GENERATING'
+  | 'READY'
+  | 'DOCTOR_REVIEWING'
+  | 'CONFIRMED'
+  | 'REJECTED'
+  | 'draft_ai'
+  | 'validation_failed';
 
 export type ReviewAction = 'ACCEPT' | 'MODIFY' | 'REJECT';
 
@@ -99,6 +106,8 @@ export interface PatientSession {
   kioskId?: string;
   status: SessionStatus;
   language: Language;
+  opdToken?: string;
+  lastActivityAt?: string;
   startedAt: string;
   completedAt?: string;
   expiresAt: string;

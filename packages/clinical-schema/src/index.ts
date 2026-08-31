@@ -36,7 +36,7 @@ export const DocumentStatusSchema = z.enum([
 
 export const GenderSchema = z.enum(['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY']);
 
-export const ConsentStatusSchema = z.enum(['PENDING', 'GRANTED', 'REVOKED']);
+export const ConsentStatusSchema = z.enum(['PENDING', 'GRANTED', 'REVOKED', 'DECLINED']);
 
 export const SessionStatusSchema = z.enum(['ACTIVE', 'COMPLETED', 'ABANDONED', 'EXPIRED']);
 
@@ -46,6 +46,8 @@ export const SummaryStatusSchema = z.enum([
   'DOCTOR_REVIEWING',
   'CONFIRMED',
   'REJECTED',
+  'draft_ai',
+  'validation_failed',
 ]);
 
 export const ReviewActionSchema = z.enum(['ACCEPT', 'MODIFY', 'REJECT']);

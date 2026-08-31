@@ -3,7 +3,10 @@ import logging
 import math
 from typing import Optional
 
-from openai import AsyncOpenAI
+try:
+    from openai import AsyncOpenAI
+except ImportError:
+    AsyncOpenAI = None
 
 from app.config import settings
 from app.media import normalize_audio_format, to_iso639

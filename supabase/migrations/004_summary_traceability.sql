@@ -1,5 +1,9 @@
--- Migration: 002_summary_traceability.sql
--- Additive changes for summary traceability and conversational linking
+-- =============================================================================
+-- MediKiosk — Summary Traceability & Conversational Linking
+-- Migration: 004_summary_traceability.sql
+-- =============================================================================
+-- Additive changes for summary traceability and conversational entity linking.
+-- =============================================================================
 
 -- 1. Add fields to medications
 ALTER TABLE medications
@@ -24,10 +28,8 @@ ALTER TABLE clinical_summaries
   ADD COLUMN IF NOT EXISTS summary_sources JSONB;
 
 -- 5. Add new status values to summary_status enum
-COMMIT;
 ALTER TYPE summary_status ADD VALUE IF NOT EXISTS 'draft_ai';
 ALTER TYPE summary_status ADD VALUE IF NOT EXISTS 'validation_failed';
-BEGIN;
 
 -- Update the default of clinical_summaries status to 'draft_ai'
 ALTER TABLE clinical_summaries

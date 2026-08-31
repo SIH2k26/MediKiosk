@@ -4,40 +4,42 @@ import { createSupabaseServiceClient } from '../../utils/supabase';
 jest.mock('../../utils/supabase');
 
 describe('aggregation.service', () => {
-  let mockSupabase: any;
-
-  beforeEach(() => {
-    mockSupabase = {
-      single: jest.fn()
+  function createMockSupabase(tableData: Record<string, any>) {
+    return {
+      from: jest.fn((table: string) => {
+        const config = tableData[table] || { data: [] };
+        const queryBuilder: any = {
+          select: jest.fn(() => queryBuilder),
+          eq: jest.fn(() => queryBuilder),
+          in: jest.fn(() => queryBuilder),
+          single: jest.fn(() => Promise.resolve({ data: config.single ?? config.data?.[0] ?? null, error: config.error ?? null })),
+          maybeSingle: jest.fn(() => Promise.resolve({ data: config.single ?? config.data?.[0] ?? null, error: config.error ?? null })),
+          then: (resolve: (val: any) => void) => resolve({ data: config.data ?? [], error: config.error ?? null }),
+        };
+        return queryBuilder;
+      }),
     };
-    mockSupabase.from = jest.fn().mockReturnValue(mockSupabase);
-    mockSupabase.select = jest.fn().mockReturnValue(mockSupabase);
-    mockSupabase.eq = jest.fn().mockReturnValue(mockSupabase);
-    mockSupabase.in = jest.fn().mockReturnValue(mockSupabase);
-    (createSupabaseServiceClient as jest.Mock).mockReturnValue(mockSupabase);
-  });
+  }
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
   it('should aggregate context successfully with all data present', async () => {
-    // Mock session
-    mockSupabase.single.mockResolvedValueOnce({ data: { patient_id: 'patient-123' }, error: null });
+    const mockSupabase = createMockSupabase({
+      patient_sessions: { single: { patient_id: 'patient-123' } },
+      history_answers: { data: [{ id: 'answer-1', raw_answer: 'headache', question_id: 'cc_1' }] },
+      documents: { data: [{ id: 'doc-1' }] },
+      patients: { single: { id: 'patient-123', first_name: 'John', last_name: 'Doe' } },
+      medications: { data: [{ id: 'med-1', name: 'Crocin', source_type: 'document' }] },
+      investigations: { data: [{ id: 'inv-1', name: 'Hb', status: 'LOW' }] },
+      allergies: { data: [] },
+      extracted_entities: { data: [{ id: 'ent-1', entity_type: 'DIAGNOSIS', value: 'Flu' }] },
+      timeline_events: { data: [{ id: 'tl-1', event_type: 'SURGERY', title: 'Appendectomy' }] },
+      triage_alerts: { data: [{ id: 'al-1', red_flags: [{ type: 'SEVERE_PAIN', severity: 'HIGH_PRIORITY' }] }] },
+    });
 
-    // Mock history_answers
-    mockSupabase.eq.mockResolvedValueOnce({ data: [{ id: 'answer-1', raw_answer: 'headache' }] });
-    // Mock session documents
-    mockSupabase.eq.mockResolvedValueOnce({ data: [{ id: 'doc-1' }] });
-
-    // Mock parallel queries (patients, meds, invs, allergies, entities, timeline, alerts)
-    mockSupabase.single.mockResolvedValueOnce({ data: { id: 'patient-123', first_name: 'John' } }); // patients
-    mockSupabase.eq.mockResolvedValueOnce({ data: [{ name: 'Crocin', source_type: 'document' }] }); // meds
-    mockSupabase.eq.mockResolvedValueOnce({ data: [{ name: 'Hb', status: 'LOW' }] }); // investigations
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] }); // allergies
-    mockSupabase.in.mockResolvedValueOnce({ data: [{ entity_type: 'DIAGNOSIS', value: 'Flu' }] }); // entities
-    mockSupabase.eq.mockResolvedValueOnce({ data: [{ event_type: 'SURGERY', title: 'Appendectomy' }] }); // timeline
-    mockSupabase.eq.mockResolvedValueOnce({ data: [{ red_flags: [{ type: 'SEVERE_PAIN', severity: 'HIGH_PRIORITY' }] }] }); // alerts
+    (createSupabaseServiceClient as jest.Mock).mockReturnValue(mockSupabase);
 
     const result = await aggregateClinicalContext('session-123');
 
@@ -52,22 +54,20 @@ describe('aggregation.service', () => {
   });
 
   it('should handle missing document data gracefully', async () => {
-    // Mock session
-    mockSupabase.single.mockResolvedValueOnce({ data: { patient_id: 'patient-123' }, error: null });
+    const mockSupabase = createMockSupabase({
+      patient_sessions: { single: { patient_id: 'patient-123' } },
+      history_answers: { data: [{ id: 'answer-1', raw_answer: 'headache' }] },
+      documents: { data: [] },
+      patients: { single: { id: 'patient-123' } },
+      medications: { data: [] },
+      investigations: { data: [] },
+      allergies: { data: [] },
+      extracted_entities: { data: [] },
+      timeline_events: { data: [] },
+      triage_alerts: { data: [] },
+    });
 
-    // Mock history_answers
-    mockSupabase.eq.mockResolvedValueOnce({ data: [{ id: 'answer-1', raw_answer: 'headache' }] });
-    // Mock session documents (empty)
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] });
-
-    // Mock parallel queries with empty arrays for document related data
-    mockSupabase.single.mockResolvedValueOnce({ data: { id: 'patient-123' } }); // patients
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] }); // meds
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] }); // investigations
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] }); // allergies
-    mockSupabase.in.mockResolvedValueOnce({ data: [] }); // entities
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] }); // timeline
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] }); // alerts
+    (createSupabaseServiceClient as jest.Mock).mockReturnValue(mockSupabase);
 
     const result = await aggregateClinicalContext('session-123');
     expect(result.medications).toHaveLength(0);
@@ -77,22 +77,20 @@ describe('aggregation.service', () => {
   });
 
   it('should handle missing conversation data gracefully', async () => {
-    // Mock session
-    mockSupabase.single.mockResolvedValueOnce({ data: { patient_id: 'patient-123' }, error: null });
+    const mockSupabase = createMockSupabase({
+      patient_sessions: { single: { patient_id: 'patient-123' } },
+      history_answers: { data: [] },
+      documents: { data: [{ id: 'doc-1' }] },
+      patients: { single: { id: 'patient-123' } },
+      medications: { data: [{ name: 'Crocin' }] },
+      investigations: { data: [] },
+      allergies: { data: [] },
+      extracted_entities: { data: [] },
+      timeline_events: { data: [] },
+      triage_alerts: { data: [] },
+    });
 
-    // Mock history_answers (empty)
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] });
-    // Mock session documents
-    mockSupabase.eq.mockResolvedValueOnce({ data: [{ id: 'doc-1' }] });
-
-    // Mock parallel queries
-    mockSupabase.single.mockResolvedValueOnce({ data: { id: 'patient-123' } }); // patients
-    mockSupabase.eq.mockResolvedValueOnce({ data: [{ name: 'Crocin' }] }); // meds
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] }); // investigations
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] }); // allergies
-    mockSupabase.in.mockResolvedValueOnce({ data: [] }); // entities
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] }); // timeline
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] }); // alerts
+    (createSupabaseServiceClient as jest.Mock).mockReturnValue(mockSupabase);
 
     const result = await aggregateClinicalContext('session-123');
     expect(result.historyAnswers).toHaveLength(0);
@@ -100,22 +98,20 @@ describe('aggregation.service', () => {
   });
 
   it('should handle both missing data gracefully', async () => {
-    // Mock session
-    mockSupabase.single.mockResolvedValueOnce({ data: { patient_id: 'patient-123' }, error: null });
+    const mockSupabase = createMockSupabase({
+      patient_sessions: { single: { patient_id: 'patient-123' } },
+      history_answers: { data: [] },
+      documents: { data: [] },
+      patients: { single: { id: 'patient-123' } },
+      medications: { data: [] },
+      investigations: { data: [] },
+      allergies: { data: [] },
+      extracted_entities: { data: [] },
+      timeline_events: { data: [] },
+      triage_alerts: { data: [] },
+    });
 
-    // Mock history_answers (empty)
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] });
-    // Mock session documents (empty)
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] });
-
-    // Mock parallel queries
-    mockSupabase.single.mockResolvedValueOnce({ data: { id: 'patient-123' } }); // patients
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] }); // meds
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] }); // investigations
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] }); // allergies
-    mockSupabase.in.mockResolvedValueOnce({ data: [] }); // entities
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] }); // timeline
-    mockSupabase.eq.mockResolvedValueOnce({ data: [] }); // alerts
+    (createSupabaseServiceClient as jest.Mock).mockReturnValue(mockSupabase);
 
     const result = await aggregateClinicalContext('session-123');
     expect(result.historyAnswers).toHaveLength(0);
