@@ -3,14 +3,17 @@ import './globals.css';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentAdminUser, signOutAdmin, type AdminUser } from '../lib/auth';
+import { Button } from '../components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { NavItem } from '../components/ui/nav-item';
 
 const ADMIN_MODULES = [
-  { icon: '👥', title: 'User Management',   desc: 'Manage doctors, triage staff, and admin accounts',       phase: 'Live',       phaseClass: 'admin-module-phase-done', href: '/users'     },
-  { icon: '🖥️', title: 'Kiosk Management',  desc: 'Configure physical kiosk devices and deployment sites',  phase: 'Live',       phaseClass: 'admin-module-phase-done', href: '/kiosks'    },
-  { icon: '📋', title: 'Audit Logs',        desc: 'View all system actions, clinical events, and security',  phase: 'Live',       phaseClass: 'admin-module-phase-done', href: '/audit'     },
-  { icon: '🌍', title: 'Language Config',   desc: 'Manage supported languages and UI translations',           phase: 'Live',       phaseClass: 'admin-module-phase-done', href: '/languages' },
-  { icon: '❓', title: 'Questionnaire',     desc: 'Configure clinical questionnaires per department',         phase: 'In Progress', phaseClass: 'admin-module-phase-wip',  href: '/questions' },
-  { icon: '📊', title: 'Analytics',         desc: 'OPD volume, wait times, and system performance metrics',  phase: 'Planned',    phaseClass: '',                        href: '/analytics' },
+  { icon: '👥', title: 'User Management',   desc: 'Manage doctors, triage staff, and admin accounts',       phase: 'Live',       phaseClass: 'success', href: '/users'     },
+  { icon: '🖥️', title: 'Kiosk Management',  desc: 'Configure physical kiosk devices and deployment sites',  phase: 'Live',       phaseClass: 'success', href: '/kiosks'    },
+  { icon: '📋', title: 'Audit Logs',        desc: 'View all system actions, clinical events, and security',  phase: 'Live',       phaseClass: 'success', href: '/audit'     },
+  { icon: '🌍', title: 'Language Config',   desc: 'Manage supported languages and UI translations',           phase: 'Live',       phaseClass: 'success', href: '/languages' },
+  { icon: '❓', title: 'Questionnaire',     desc: 'Configure clinical questionnaires per department',         phase: 'In Progress', phaseClass: 'warning',  href: '/questions' },
+  { icon: '📊', title: 'Analytics',         desc: 'OPD volume, wait times, and system performance metrics',  phase: 'Planned',    phaseClass: 'muted',    href: '/analytics' },
 ] as const;
 
 function MediKioskLogo() {
@@ -47,9 +50,9 @@ export default function AdminPage() {
 
   if (!authChecked) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: '1rem' }}>
-        <div className="page-spinner" aria-label="Authenticating…" />
-        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>Authenticating…</p>
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-dark">
+        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" aria-label="Authenticating…" />
+        <p className="text-sm text-ink-muted">Authenticating…</p>
       </div>
     );
   }
@@ -57,117 +60,136 @@ export default function AdminPage() {
   const initials = user ? user.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'AD';
 
   const STATS = [
-    { label: 'Active Kiosks',    value: '4',   icon: '🖥️', color: 'var(--color-primary)' },
-    { label: "Today's Patients", value: '127', icon: '👤', color: '#93C5FD' },
-    { label: 'Pending Alerts',   value: '3',   icon: '🚨', color: '#FCA5A5' },
-    { label: 'Staff Accounts',   value: '18',  icon: '👥', color: '#FCD34D' },
+    { label: 'Active Kiosks',    value: '4',   icon: '🖥️' },
+    { label: "Today's Patients", value: '127', icon: '👤' },
+    { label: 'Pending Alerts',   value: '3',   icon: '🚨' },
+    { label: 'Staff Accounts',   value: '18',  icon: '👥' },
   ] as const;
 
   return (
-    <div className="admin-layout">
+    <div className="min-h-screen flex flex-col bg-dark text-ink-primary">
       {/* ── Top Navigation ── */}
-      <header className="admin-topnav" role="banner">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-dark-rule bg-dark-raised" role="banner">
         {/* Brand */}
-        <div className="admin-topnav-logo">
-          <div className="admin-topnav-icon" aria-hidden="true">
+        <div className="flex items-center gap-3">
+          <div className="text-accent" aria-hidden="true">
             <MediKioskLogo />
           </div>
-          <span className="admin-topnav-brand">MediKiosk</span>
-          <span className="admin-topnav-badge">Admin Panel</span>
+          <span className="font-bold text-ink-primary">MediKiosk</span>
+          <span className="px-2 py-1 text-xs font-medium rounded-md bg-accent-wash text-accent border border-dark-rule">Admin Panel</span>
         </div>
 
         {/* Right side */}
-        <nav className="admin-topnav-right" aria-label="Top navigation links">
-          <a href="http://localhost:3000" className="admin-topnav-link" target="_blank" rel="noopener noreferrer">
+        <nav className="flex items-center gap-4" aria-label="Top navigation links">
+          <NavItem href="http://localhost:3000" target="_blank" rel="noopener noreferrer">
             Patient Kiosk
-          </a>
-          <a href="http://localhost:3001" className="admin-topnav-link" target="_blank" rel="noopener noreferrer">
+          </NavItem>
+          <NavItem href="http://localhost:3001" target="_blank" rel="noopener noreferrer">
             Doctor Portal
-          </a>
-          <div className="admin-topnav-divider" aria-hidden="true" />
+          </NavItem>
+          <div className="w-px h-6 bg-dark-rule" aria-hidden="true" />
 
-          <div className="admin-user-chip" aria-label={`Signed in as ${user?.fullName}`}>
-            <div className="admin-user-chip-avatar" aria-hidden="true">{initials}</div>
-            <span className="admin-user-chip-name">{user?.fullName ?? 'Admin'}</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-dark-sunken border border-dark-rule" aria-label={`Signed in as ${user?.fullName}`}>
+            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-accent text-dark text-[10px] font-bold" aria-hidden="true">
+              {initials}
+            </div>
+            <span className="text-sm font-medium text-ink-primary">{user?.fullName ?? 'Admin'}</span>
           </div>
 
-          <button
+          <Button
             id="admin-signout-btn"
-            className="admin-signout-btn"
+            variant="ghost"
             onClick={handleSignOut}
             disabled={signingOut}
             aria-label="Sign out of admin panel"
           >
             {signingOut ? 'Signing out…' : 'Sign Out'}
-          </button>
+          </Button>
         </nav>
       </header>
 
       {/* ── Main Content ── */}
-      <main className="admin-main" role="main">
-
+      <main className="flex-1 p-8 max-w-7xl mx-auto w-full flex flex-col gap-8" role="main">
         {/* Hero row */}
-        <div className="admin-hero fade-in">
+        <div className="flex items-start justify-between">
           <div>
-            <h1 className="admin-hero-title">System Administration</h1>
-            <p className="admin-hero-sub">
-              Welcome back, <strong>{user?.fullName}</strong>.{' '}
+            <h1 className="text-3xl font-bold text-ink-primary mb-2">System Administration</h1>
+            <p className="text-ink-secondary max-w-2xl">
+              Welcome back, <strong className="text-ink-primary">{user?.fullName}</strong>.{' '}
               Full administrative access to MediKiosk infrastructure and configuration.
             </p>
           </div>
-          <div className="admin-hero-meta" role="status" aria-live="polite">
-            <div className="admin-status-dot" aria-label="All systems online" />
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-dark-sunken border border-dark-rule text-sm text-ink-secondary" role="status" aria-live="polite">
+            <div className="w-2 h-2 rounded-full bg-accent" aria-label="All systems online" />
             All systems operational
           </div>
         </div>
 
         {/* Stats */}
-        <div className="admin-stats fade-in fade-in-1" role="region" aria-label="System statistics">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4" role="region" aria-label="System statistics">
           {STATS.map((s) => (
-            <div key={s.label} className="admin-stat-card">
-              <div className="admin-stat-icon-box" aria-hidden="true">{s.icon}</div>
-              <div>
-                <div className="admin-stat-value" style={{ color: s.color }}>{s.value}</div>
-                <div className="admin-stat-label">{s.label}</div>
-              </div>
-            </div>
+            <Card key={s.label} className="bg-dark-raised border-dark-rule shadow-card rounded-lg">
+              <CardContent className="p-6 flex items-center gap-4">
+                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-dark-sunken border border-dark-rule text-xl" aria-hidden="true">
+                  {s.icon}
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-ink-primary">{s.value}</div>
+                  <div className="text-sm text-ink-tertiary">{s.label}</div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
 
         {/* Module grid */}
-        <h2 className="admin-section-title fade-in fade-in-2">Administration Modules</h2>
-        <div className="admin-modules-grid" role="list" aria-label="Administration modules">
-          {ADMIN_MODULES.map((mod, i) => (
-            <a
-              key={mod.title}
-              href={mod.href}
-              className={`admin-module-card fade-in fade-in-${Math.min(i + 1, 4) as 1 | 2 | 3 | 4}`}
-              role="listitem"
-              aria-label={`${mod.title} — ${mod.desc}`}
-            >
-              <div className="admin-module-icon" aria-hidden="true">{mod.icon}</div>
-              <div>
-                <div className="admin-module-title">{mod.title}</div>
-                <p className="admin-module-desc">{mod.desc}</p>
-              </div>
-              <span className={`admin-module-phase${mod.phaseClass ? ` ${mod.phaseClass}` : ''}`}>
-                {mod.phase}
-              </span>
-            </a>
-          ))}
+        <div>
+          <h2 className="text-xl font-bold text-ink-primary mb-4">Administration Modules</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" role="list" aria-label="Administration modules">
+            {ADMIN_MODULES.map((mod) => (
+              <a
+                key={mod.title}
+                href={mod.href}
+                className="block group"
+                role="listitem"
+                aria-label={`${mod.title} — ${mod.desc}`}
+              >
+                <Card className="h-full transition-colors bg-dark-raised border-dark-rule group-hover:border-dark-ruleStrong shadow-card rounded-lg">
+                  <CardContent className="p-6 flex flex-col h-full gap-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-md bg-dark-sunken border border-dark-rule text-lg" aria-hidden="true">
+                        {mod.icon}
+                      </div>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-md border ${
+                        mod.phaseClass === 'success' ? 'bg-accent-wash text-accent border-dark-rule' :
+                        mod.phaseClass === 'warning' ? 'bg-dark-sunken text-signal-warning border-dark-rule' :
+                        'bg-dark-sunken text-ink-muted border-dark-rule'
+                      }`}>
+                        {mod.phase}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-ink-primary mb-1 group-hover:text-accent transition-colors">{mod.title}</div>
+                      <p className="text-sm text-ink-secondary">{mod.desc}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </a>
+            ))}
+          </div>
         </div>
 
         {/* Phase notice */}
-        <div className="admin-phase-notice fade-in fade-in-4" role="note">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true">
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-accent-wash border border-dark-rule text-sm text-accent" role="note">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 mt-0.5" aria-hidden="true">
             <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.3" />
             <path d="M10 6v4M10 13h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
           <div>
-            <strong>SIH 2026 Prototype</strong> — This admin console is in active development.
-            {' '}Modules marked <strong>Live</strong> are fully functional.{' '}
-            <strong>In Progress</strong> modules are being built.{' '}
-            <strong>Planned</strong> modules are designed and queued for Phase 3.
+            <strong className="font-semibold">SIH 2026 Prototype</strong> — This admin console is in active development.
+            {' '}Modules marked <strong className="font-semibold text-ink-primary">Live</strong> are fully functional.{' '}
+            <strong className="font-semibold text-ink-primary">In Progress</strong> modules are being built.{' '}
+            <strong className="font-semibold text-ink-primary">Planned</strong> modules are designed and queued for Phase 3.
           </div>
         </div>
       </main>

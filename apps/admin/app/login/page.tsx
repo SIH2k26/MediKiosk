@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInAdmin, getCurrentAdminUser } from '../../lib/auth';
-import './login.css';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -57,137 +59,121 @@ export default function AdminLoginPage() {
 
   if (checkingSession) {
     return (
-      <div className="login-screen">
-        <div className="login-spinner" aria-label="Checking session…" />
+      <div className="min-h-screen flex items-center justify-center bg-dark">
+        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" aria-label="Checking session…" />
       </div>
     );
   }
 
   return (
-    <div className="login-screen" role="main">
-      <div className="login-orb login-orb-1" aria-hidden="true" />
-      <div className="login-orb login-orb-2" aria-hidden="true" />
-
-      <div className="login-card login-card-admin" style={{ maxWidth: '440px', padding: '24px 28px' }}>
-        {/* Logo */}
-        <div className="login-logo" style={{ marginBottom: '16px' }}>
-          <div className="login-logo-icon login-logo-icon-admin" aria-hidden="true">
-            <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-              <path d="M14 3L25 9.5V18.5L14 25L3 18.5V9.5L14 3Z" stroke="white" strokeWidth="1.5" fill="none" />
-              <path d="M9 14h10M14 9v10" stroke="white" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+    <div className="min-h-screen flex items-center justify-center bg-dark p-4" role="main">
+      <Card className="w-full max-w-md bg-dark-raised border-dark-rule shadow-raised">
+        <CardHeader className="pb-4">
+          {/* Logo */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-accent text-dark font-bold" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+                <path d="M14 3L25 9.5V18.5L14 25L3 18.5V9.5L14 3Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                <path d="M9 14h10M14 9v10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </div>
+            <div>
+              <div className="text-lg font-bold text-ink-primary">MediKiosk</div>
+              <div className="text-xs text-ink-tertiary uppercase tracking-wider">Admin Command Console</div>
+            </div>
           </div>
-          <div>
-            <div className="login-logo-name" style={{ fontSize: '17px' }}>MediKiosk</div>
-            <div className="login-logo-sub login-logo-sub-admin" style={{ fontSize: '11px' }}>Admin Command Console</div>
-          </div>
-        </div>
 
-        {/* Heading */}
-        <div className="login-heading" style={{ marginBottom: '16px' }}>
-          <h1 id="admin-login-title" className="login-title" style={{ fontSize: '20px', margin: '0 0 4px 0' }}>Administrator Access</h1>
-          <p className="login-subtitle" style={{ fontSize: '12.5px', margin: 0 }}>System configuration, audit logs, and hospital operations.</p>
-        </div>
+          {/* Heading */}
+          <CardTitle id="admin-login-title" className="text-2xl font-bold text-ink-primary mb-1">Administrator Access</CardTitle>
+          <p className="text-sm text-ink-secondary">System configuration, audit logs, and hospital operations.</p>
+        </CardHeader>
+        
+        <CardContent>
+          {/* Error message */}
+          {error && (
+            <div className="flex items-start gap-2 p-3 mb-4 rounded-md bg-dark-sunken border border-dark-rule text-signal-critical text-sm" role="alert">
+              <span>⚠️</span>
+              <p>{error}</p>
+            </div>
+          )}
 
-        {/* Error message */}
-        {error && (
-          <div className="login-error" role="alert" style={{ padding: '8px 12px', marginBottom: '12px', fontSize: '13px' }}>
-            <span className="login-error-icon">⚠️</span>
-            {error}
-          </div>
-        )}
-
-        {/* Quick 1-Click Demo Admin Button */}
-        <div style={{ marginBottom: '16px' }}>
+          {/* Quick 1-Click Demo Admin Button */}
           <button
             type="button"
             onClick={handleQuickDemoAdmin}
             disabled={isLoading}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 14px',
-              backgroundColor: 'rgba(124, 58, 237, 0.12)',
-              border: '1px solid rgba(124, 58, 237, 0.35)',
-              borderRadius: '8px',
-              color: '#F0F4F8',
-              cursor: 'pointer',
-              textAlign: 'left',
-            }}
+            className="w-full flex items-center justify-between p-3 mb-6 rounded-md bg-accent-wash border border-dark-rule text-left transition-colors hover:bg-dark-sunken disabled:opacity-50"
           >
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 700 }}>⚡ 1-Click Administrator Access</div>
-              <div style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.6)' }}>admin@hospital.org · Full Control</div>
+              <div className="text-sm font-bold text-ink-primary">⚡ 1-Click Administrator Access</div>
+              <div className="text-xs text-accent">admin@hospital.org · Full Control</div>
             </div>
-            <span style={{ fontSize: '12px', color: '#A78BFA', fontWeight: 700 }}>Enter →</span>
+            <span className="text-sm font-bold text-accent">Enter →</span>
           </button>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '14px 0' }}>
-          <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(255,255,255,0.08)' }} />
-          <span style={{ fontSize: '11px', color: 'rgba(240,244,248,0.4)', textTransform: 'uppercase' }}>Or Custom Login</span>
-          <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(255,255,255,0.08)' }} />
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="login-field" style={{ marginBottom: '10px' }}>
-            <label htmlFor="admin-email" className="login-label">Administrator Email</label>
-            <input
-              id="admin-email"
-              type="email"
-              className="login-input"
-              placeholder="admin@hospital.org"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
-              style={{ height: '38px', fontSize: '13.5px' }}
-              required
-            />
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex-1 h-px bg-dark-rule" />
+            <span className="text-xs text-ink-muted uppercase tracking-wider font-medium">Or Custom Login</span>
+            <div className="flex-1 h-px bg-dark-rule" />
           </div>
 
-          <div className="login-field" style={{ marginBottom: '14px' }}>
-            <label htmlFor="admin-password" className="login-label">Password</label>
-            <div className="login-input-group">
-              <input
-                id="admin-password"
-                type={showPassword ? 'text' : 'password'}
-                className="login-input login-input-pw"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+          {/* Form */}
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <div className="space-y-1.5">
+              <label htmlFor="admin-email" className="text-sm font-medium text-ink-primary">Administrator Email</label>
+              <Input
+                id="admin-email"
+                type="email"
+                placeholder="admin@hospital.org"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
-                style={{ height: '38px', fontSize: '13.5px' }}
                 required
               />
-              <button
-                type="button"
-                className="login-pw-toggle"
-                onClick={() => setShowPassword((v) => !v)}
-                tabIndex={-1}
-              >
-                {showPassword ? '🙈' : '👁'}
-              </button>
             </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="admin-password" className="text-sm font-medium text-ink-primary">Password</label>
+              <div className="relative">
+                <Input
+                  id="admin-password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-tertiary hover:text-ink-primary focus:outline-none"
+                  onClick={() => setShowPassword((v) => !v)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? '🙈' : '👁'}
+                </button>
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              variant="default"
+              disabled={isLoading}
+              className="w-full mt-2"
+            >
+              {isLoading ? 'Signing in…' : 'Sign In to Admin Console →'}
+            </Button>
+          </form>
+
+          {/* Back link */}
+          <div className="mt-6 text-center">
+            <a href="http://localhost:3000" className="text-sm text-ink-tertiary hover:text-ink-primary transition-colors">
+              ← Back to MediKiosk Home
+            </a>
           </div>
-
-          <button
-            type="submit"
-            className="login-btn login-btn-admin"
-            disabled={isLoading}
-            style={{ height: '42px' }}
-          >
-            {isLoading ? 'Signing in…' : 'Sign In to Admin Console →'}
-          </button>
-        </form>
-
-        {/* Back link */}
-        <a href="http://localhost:3000" className="login-back-link" style={{ marginTop: '14px' }}>
-          ← Back to MediKiosk Home
-        </a>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

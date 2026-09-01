@@ -2,6 +2,12 @@
 
 import '../globals.css';
 import Link from 'next/link';
+import { Button } from '../../components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
+import { Input } from '../../components/ui/input';
+import { SeverityBadge } from '../../components/ui/severity-badge';
+import { DataMono } from '../../components/ui/data-mono';
+import { NavItem } from '../../components/ui/nav-item';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentDoctorUser, signOutDoctor, type DoctorUser } from '../../lib/auth';
@@ -198,29 +204,26 @@ export default function DoctorTriagePage() {
   }
 
   return (
-    <div className="portal-layout">
+    <div className="flex h-screen w-full overflow-hidden bg-dark">
       {/* Sidebar */}
-      <aside className="sidebar" role="navigation" aria-label="Doctor portal navigation">
-        <div className="sidebar-logo">
-          <div className="sidebar-logo-icon" aria-hidden="true">
+      <aside className="w-64 flex flex-col border-r border-dark-rule bg-dark-raised flex-shrink-0" role="navigation" aria-label="Doctor portal navigation">
+        <div className="flex items-center gap-3 p-5 border-b border-dark-rule">
+          <div className="text-accent" aria-hidden="true">
             <MediKioskLogo />
           </div>
           <div>
-            <div className="sidebar-logo-name">MediKiosk</div>
-            <div className="sidebar-logo-sub">Doctor Portal</div>
+            <div className="font-semibold text-ink-primary tracking-tight text-lg">MediKiosk</div>
+            <div className="text-xs text-ink-tertiary">Doctor Portal</div>
           </div>
         </div>
 
-        <nav className="sidebar-nav">
-          <div className="nav-section-label">OPD</div>
-          <Link href="/" className="nav-item">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1">
+          <div className="text-xs font-semibold uppercase tracking-wider text-ink-muted mt-5 mb-2 px-3">OPD</div>
+          <Link href="/" passHref legacyBehavior><NavItem><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M2 6h12M2 10h12M6 2v12M10 2v12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
             </svg>
-            Patient Queue
-          </Link>
-          <Link href="/triage" className="nav-item active" aria-current="page">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            Patient Queue</NavItem></Link>
+          <Link href="/triage" passHref legacyBehavior><NavItem active aria-current="page"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M8 2L14 9H2L8 2Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
               <path d="M8 6v3M8 11h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
@@ -238,64 +241,57 @@ export default function DoctorTriagePage() {
               }}>
                 {activeAlerts.length}
               </span>
-            )}
-          </Link>
-          <Link href="/history" className="nav-item">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            )}</NavItem></Link>
+          <Link href="/history" passHref legacyBehavior><NavItem><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M8 3v5l3 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
               <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2" />
             </svg>
-            Past Encounters
-          </Link>
+            Past Encounters</NavItem></Link>
 
-          <div className="nav-section-label">Portals</div>
-          <a href="http://localhost:3000" className="nav-item" target="_blank" rel="noopener noreferrer">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <div className="text-xs font-semibold uppercase tracking-wider text-ink-muted mt-5 mb-2 px-3">Portals</div>
+          <NavItem href="http://localhost:3000" target="_blank" rel="noopener noreferrer"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
               <path d="M5 13v2M11 13v2M3 15h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
             </svg>
-            Patient Kiosk
-          </a>
-          <a href="http://localhost:3002" className="nav-item" target="_blank" rel="noopener noreferrer">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            Patient Kiosk</NavItem>
+          <NavItem href="http://localhost:3002" target="_blank" rel="noopener noreferrer"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M8 1L14 4.5V11.5L8 15L2 11.5V4.5L8 1Z" stroke="currentColor" strokeWidth="1.2" fill="none" />
             </svg>
-            Admin Console
-          </a>
+            Admin Console</NavItem>
         </nav>
 
-        <div className="sidebar-user-section">
+        <div className="p-4 border-t border-dark-rule flex flex-col gap-3">
           {user && (
-            <div className="sidebar-user-badge">
-              <div className="sidebar-user-avatar" aria-hidden="true">{initials}</div>
-              <div className="sidebar-user-info">
-                <div className="sidebar-user-name">{user.fullName}</div>
-                <div className="sidebar-user-role">{user.role}</div>
+            <div className="flex items-center gap-3 p-3 bg-dark-sunken rounded-lg border border-dark-rule">
+              <div className="w-9 h-9 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-sm border border-accent/20" aria-hidden="true">{initials}</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold truncate text-ink-primary">{user.fullName}</div>
+                <div className="text-xs text-ink-tertiary truncate uppercase tracking-wider font-medium">{user.role}</div>
               </div>
             </div>
           )}
-          <button className="nav-item nav-item-signout" onClick={handleSignOut}>
+          <Button variant="ghost" className="w-full justify-start text-[#FCA5A5] hover:text-[#F87171] hover:bg-[#FCA5A5]/10 gap-2" onClick={handleSignOut}>
             Sign Out
-          </button>
+          </Button>
         </div>
       </aside>
 
       {/* Main */}
-      <main className="portal-main">
-        <div className="portal-topbar">
+      <main className="flex-1 flex flex-col overflow-hidden bg-dark">
+        <div className="flex items-center justify-between p-6 border-b border-dark-rule bg-dark-raised flex-shrink-0">
           <div>
-            <h1 className="portal-topbar-title">Real-Time Clinical Triage Signals</h1>
-            <p className="portal-topbar-sub">AST Rule Engine signals & red flags detected during live patient kiosk intakes.</p>
+            <h1 className="text-2xl font-semibold text-ink-primary tracking-tight">Real-Time Clinical Triage Signals</h1>
+            <p className="text-sm text-ink-secondary mt-1">AST Rule Engine signals & red flags detected during live patient kiosk intakes.</p>
           </div>
-          <div className="portal-topbar-right">
+          <div className="flex items-center gap-5">
             <span style={{ fontSize: '12px', color: '#10B981', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
-              <span className="status-dot" />
+              <span className="w-2 h-2 rounded-full bg-[#10B981]" />
               AST Engine Live
             </span>
           </div>
         </div>
 
-        <div className="portal-content">
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
           {loading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem 0' }}>
               <div className="page-spinner" />
@@ -314,7 +310,7 @@ export default function DoctorTriagePage() {
                       return (
                         <div
                           key={alert.id}
-                          className="card fade-in"
+                          className="animate-in fade-in slide-in-from-bottom-2 border rounded-lg shadow-card"
                           style={{
                             borderColor: risk.borderColor,
                             background: risk.bgColor,
@@ -327,9 +323,9 @@ export default function DoctorTriagePage() {
                           <div style={{ flex: 1 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                <span className={`badge badge-${alert.riskLevel.toLowerCase().replace('_', '-')}`}>
+                                <SeverityBadge severity={alert.riskLevel === 'EMERGENCY' ? 'critical' : alert.riskLevel === 'HIGH_PRIORITY' || alert.riskLevel === 'WARNING' ? 'warning' : 'default'}>
                                   {risk.label}
-                                </span>
+                                </SeverityBadge>
                                 {alert.clinicalCategory && (
                                   <span style={{ fontSize: '11px', textTransform: 'uppercase', padding: '2px 8px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', color: 'rgba(240,244,248,0.7)', fontWeight: 600 }}>
                                     {alert.clinicalCategory}
@@ -353,20 +349,18 @@ export default function DoctorTriagePage() {
                           </div>
 
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0 }}>
-                            <button
-                              className="btn btn-primary"
+                            <Button variant="default"
                               style={{ height: '32px', padding: '0 12px', fontSize: '12px' }}
                               onClick={() => handleAcknowledge(alert.id)}
                             >
                               ✓ Acknowledge
-                            </button>
-                            <button
-                              className="btn btn-secondary"
+                            </Button>
+                            <Button variant="outline"
                               style={{ height: '32px', padding: '0 12px', fontSize: '12px', color: '#FCA5A5', borderColor: 'rgba(239,68,68,0.3)' }}
                               onClick={() => handleEscalate(alert.id)}
                             >
                               ⚡ Escalate
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       );
@@ -383,9 +377,7 @@ export default function DoctorTriagePage() {
                   </h2>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {otherAlerts.map((alert) => (
-                      <div
-                        key={alert.id}
-                        className="card"
+                      <Card key={alert.id}
                         style={{
                           display: 'flex',
                           justifyContent: 'space-between',
@@ -405,14 +397,13 @@ export default function DoctorTriagePage() {
                             {alert.clinicalCategory} · {timeAgo(alert.createdAt)}
                           </div>
                         </div>
-                        <button
-                          className="btn btn-secondary"
+                        <Button variant="outline"
                           style={{ height: '28px', padding: '0 10px', fontSize: '11px' }}
                           onClick={() => handleResolve(alert.id)}
                         >
                           Mark Resolved
-                        </button>
-                      </div>
+                        </Button>
+                      </Card>
                     ))}
                   </div>
                 </div>

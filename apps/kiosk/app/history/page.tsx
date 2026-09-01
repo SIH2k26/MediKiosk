@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { api } from '../../lib/api-client';
 import { aiHistoryApi } from '../../lib/ai-history-shim';
 import { useAudioRecorder } from './hooks/use-audio-recorder';
@@ -453,9 +454,15 @@ export default function HistoryPage() {
 
                 {audioStatus === 'RECORDING' && (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                    <button className="btn" onClick={handleStopVoiceRecording} style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#EF4444', color: '#fff', fontSize: '24px' }}>
+                    <motion.button 
+                      className="btn" 
+                      onClick={handleStopVoiceRecording} 
+                      style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#EF4444', color: '#fff', fontSize: '24px' }}
+                      animate={{ boxShadow: ["0 0 0px 0px rgba(20,201,165,0)", "0 0 0px 10px rgba(20,201,165,0.2)", "0 0 0px 20px rgba(20,201,165,0)"] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
                       🎙️
-                    </button>
+                    </motion.button>
                     <div style={{ color: '#EF4444', fontWeight: 600, fontSize: '13px' }}>
                       {t('Listening… Tap to stop', 'सुन रहे हैं… रोकने के लिए दबाएं')}
                     </div>

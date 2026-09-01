@@ -1,26 +1,29 @@
 'use client';
 import '../globals.css';
-import './triage.css';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentAdminUser, type AdminUser } from '../../lib/auth';
 import { supabase } from '../../lib/supabase';
 import type { TriageAlert, RiskLevel, AlertStatus, RedFlag } from '@medikiosk/shared-types';
 
+import { Button } from '../../components/ui/button';
+import { Card, CardContent } from '../../components/ui/card';
+import { SeverityBadge } from '../../components/ui/severity-badge';
+
 // ─── Badge helpers ────────────────────────────────────────────────────────────
 
-const RISK_CONFIG: Record<RiskLevel, { cls: string; label: string; pulse: boolean }> = {
-  EMERGENCY:     { cls: 'badge-emergency',    label: '🚨 Emergency',    pulse: true  },
-  HIGH_PRIORITY: { cls: 'badge-high-priority',label: '⚠️ High Priority', pulse: true  },
-  WARNING:       { cls: 'badge-warning',      label: '⚡ Warning',      pulse: false },
-  NORMAL:        { cls: 'badge-normal',       label: '✅ Normal',       pulse: false },
+const RISK_CONFIG: Record<RiskLevel, { severity: "critical" | "warning" | "default"; label: string; pulse: boolean }> = {
+  EMERGENCY:     { severity: 'critical',    label: '🚨 Emergency',    pulse: true  },
+  HIGH_PRIORITY: { severity: 'warning',label: '⚠️ High Priority', pulse: true  },
+  WARNING:       { severity: 'warning',      label: '⚡ Warning',      pulse: false },
+  NORMAL:        { severity: 'default',       label: '✅ Normal',       pulse: false },
 };
 
 const STATUS_CONFIG: Record<AlertStatus, { cls: string; label: string }> = {
-  ACTIVE:        { cls: 'status-active',        label: 'Active'       },
-  ACKNOWLEDGED:  { cls: 'status-acknowledged',  label: 'Acknowledged' },
-  ESCALATED:     { cls: 'status-escalated',     label: 'Escalated'    },
-  RESOLVED:      { cls: 'status-resolved',      label: 'Resolved'     },
+  ACTIVE:        { cls: 'bg-accent text-accent border-accent', label: 'Active'       },
+  ACKNOWLEDGED:  { cls: 'bg-signal-warning text-signal-warning border-signal-warning', label: 'Acknowledged' },
+  ESCALATED:     { cls: 'bg-signal-warning text-signal-warning border-signal-warning', label: 'Escalated'    },
+  RESOLVED:      { cls: 'bg-dark-sunken text-ink-muted border-dark-rule', label: 'Resolved'     },
 };
 
 function timeAgo(isoString: string): string {
@@ -206,79 +209,79 @@ export default function AdminTriageDashboard() {
 
   if (!authChecked) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#0F1117' }}>
-        <div className="page-spinner" aria-label="Authenticating…" />
+      <div className="flex items-center justify-center min-h-screen bg-dark">
+        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" aria-label="Authenticating…" />
       </div>
     );
   }
 
   return (
-    <div className="admin-layout">
+    <div className="min-h-screen flex flex-col bg-dark">
       {/* Top Nav */}
-      <header className="admin-topnav">
-        <div className="admin-topnav-logo">
-          <div className="admin-topnav-icon" aria-hidden="true">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-dark-rule">
+        <div className="flex items-center gap-3">
+          <div className="text-accent" aria-hidden="true">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M10 2L18 7V13L10 18L2 13V7L10 2Z" stroke="white" strokeWidth="1.5" fill="none"/>
-              <path d="M7 10h6M10 7v6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M10 2L18 7V13L10 18L2 13V7L10 2Z" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+              <path d="M7 10h6M10 7v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </div>
-          <span className="admin-topnav-brand">MediKiosk</span>
-          <span className="admin-topnav-badge">Triage Dashboard</span>
+          <span className="font-bold text-ink-primary">MediKiosk</span>
+          <span className="px-2 py-1 text-xs font-medium rounded-md bg-accent-wash text-accent">Triage Dashboard</span>
         </div>
-        <div className="admin-topnav-right">
+        <div className="flex items-center gap-4">
           {newAlertCount > 0 && (
             <button
-              className="triage-new-badge"
+              className="px-3 py-1.5 rounded-full bg-signal-critical text-white text-xs font-bold animate-pulse"
               onClick={() => setNewAlertCount(0)}
               aria-label={`${newAlertCount} new alerts since page load`}
             >
               {newAlertCount} new
             </button>
           )}
-          <a href="/" className="admin-topnav-link">← Dashboard</a>
-          <div className="admin-topnav-divider" />
-          <span className="triage-realtime-indicator" aria-label="Realtime active">
-            <span className="admin-status-dot" />
+          <a href="/" className="text-sm font-medium text-ink-secondary hover:text-ink-primary transition-colors">← Dashboard</a>
+          <div className="w-px h-6 bg-dark-rule" />
+          <span className="flex items-center gap-2 text-sm font-medium text-accent" aria-label="Realtime active">
+            <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
             Live
           </span>
         </div>
       </header>
 
-      <main className="admin-main">
+      <main className="flex-1 p-8 max-w-7xl mx-auto w-full flex flex-col gap-8">
         {/* Hero */}
-        <div className="admin-hero fade-in">
-          <div>
-            <h1 className="admin-hero-title">Triage Alerts</h1>
-            <p className="admin-hero-sub">
+        <div className="flex items-start justify-between">
+          <div className="max-w-2xl">
+            <h1 className="text-3xl font-bold text-ink-primary mb-2">Triage Alerts</h1>
+            <p className="text-ink-secondary">
               Real-time alerts from deterministic red-flag detection.{' '}
-              <strong>Potential red flags detected</strong> — not diagnoses.
+              <strong className="text-ink-primary">Potential red flags detected</strong> — not diagnoses.
               All alerts require clinical assessment.
             </p>
           </div>
-          <div className="triage-stats-row">
-            <div className="triage-stat triage-stat-emergency">
-              <span className="triage-stat-value">{emergencyCount}</span>
-              <span className="triage-stat-label">Emergency</span>
+          <div className="flex gap-3">
+            <div className="flex flex-col items-center justify-center px-4 py-2 rounded-md bg-signal-critical border border-signal-critical min-w-[80px]">
+              <span className="text-xl font-bold text-signal-critical">{emergencyCount}</span>
+              <span className="text-xs uppercase tracking-wider text-signal-critical">Emergency</span>
             </div>
-            <div className="triage-stat triage-stat-active">
-              <span className="triage-stat-value">{activeCount}</span>
-              <span className="triage-stat-label">Active</span>
+            <div className="flex flex-col items-center justify-center px-4 py-2 rounded-md bg-accent border border-accent min-w-[80px]">
+              <span className="text-xl font-bold text-accent">{activeCount}</span>
+              <span className="text-xs uppercase tracking-wider text-accent">Active</span>
             </div>
-            <div className="triage-stat">
-              <span className="triage-stat-value">{alerts.length}</span>
-              <span className="triage-stat-label">Total</span>
+            <div className="flex flex-col items-center justify-center px-4 py-2 rounded-md bg-dark-sunken border border-dark-rule min-w-[80px]">
+              <span className="text-xl font-bold text-ink-primary">{alerts.length}</span>
+              <span className="text-xs uppercase tracking-wider text-ink-secondary">Total</span>
             </div>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="triage-filters fade-in">
-          <div className="triage-filter-group">
-            <label className="triage-filter-label" htmlFor="filter-status">Status</label>
+        <div className="flex items-end gap-4 p-4 rounded-lg bg-dark-sunken border border-dark-rule">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary" htmlFor="filter-status">Status</label>
             <select
               id="filter-status"
-              className="triage-filter-select"
+              className="h-10 px-3 py-2 rounded-md bg-dark border border-dark-rule text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as AlertStatus | 'ALL')}
             >
@@ -289,11 +292,11 @@ export default function AdminTriageDashboard() {
               <option value="RESOLVED">Resolved</option>
             </select>
           </div>
-          <div className="triage-filter-group">
-            <label className="triage-filter-label" htmlFor="filter-risk">Risk</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary" htmlFor="filter-risk">Risk</label>
             <select
               id="filter-risk"
-              className="triage-filter-select"
+              className="h-10 px-3 py-2 rounded-md bg-dark border border-dark-rule text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent"
               value={filterRisk}
               onChange={(e) => setFilterRisk(e.target.value as RiskLevel | 'ALL')}
             >
@@ -303,26 +306,27 @@ export default function AdminTriageDashboard() {
               <option value="WARNING">Warning</option>
             </select>
           </div>
-          <button
+          <Button
             id="triage-refresh-btn"
-            className="triage-refresh-btn"
+            variant="ghost"
+            className="ml-auto"
             onClick={fetchAlerts}
             aria-label="Refresh alerts"
           >
             🔄 Refresh
-          </button>
+          </Button>
         </div>
 
         {/* Alerts list */}
         {loading ? (
-          <div className="triage-loading"><div className="page-spinner" /></div>
+          <div className="flex justify-center p-12"><div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" /></div>
         ) : filteredAlerts.length === 0 ? (
-          <div className="triage-empty fade-in">
-            <span style={{ fontSize: '3rem' }}>✅</span>
-            <p>No triage alerts match the selected filters.</p>
+          <div className="flex flex-col items-center justify-center p-12 text-center rounded-lg border border-dashed border-dark-rule">
+            <span className="text-4xl mb-4">✅</span>
+            <p className="text-ink-secondary">No triage alerts match the selected filters.</p>
           </div>
         ) : (
-          <div className="triage-alert-list fade-in">
+          <div className="flex flex-col gap-4">
             {filteredAlerts.map((alert) => {
               const risk = RISK_CONFIG[alert.riskLevel] ?? RISK_CONFIG.NORMAL;
               const status = STATUS_CONFIG[alert.alertStatus] ?? STATUS_CONFIG.ACTIVE;
@@ -330,116 +334,129 @@ export default function AdminTriageDashboard() {
               const canAct = alert.alertStatus !== 'RESOLVED';
 
               return (
-                <div
+                <Card 
                   key={alert.id}
-                  className={`triage-alert-card ${alert.riskLevel === 'EMERGENCY' ? 'triage-alert-card--emergency' : ''} ${alert.riskLevel === 'HIGH_PRIORITY' ? 'triage-alert-card--high' : ''}`}
+                  className={`overflow-hidden relative ${alert.riskLevel === 'EMERGENCY' ? 'border-l-2 border-signal-critical' : alert.riskLevel === 'HIGH_PRIORITY' ? 'border-l-2 border-signal-warning' : ''}`}
                 >
                   {/* Left accent bar */}
-                  <div className={`triage-alert-accent triage-alert-accent--${alert.riskLevel.toLowerCase().replace('_', '-')}`} />
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                    alert.riskLevel === 'EMERGENCY' ? 'bg-signal-critical' :
+                    alert.riskLevel === 'HIGH_PRIORITY' ? 'bg-signal-warning' :
+                    alert.riskLevel === 'WARNING' ? 'bg-signal-warning' :
+                    'bg-accent'
+                  }`} />
 
-                  <div className="triage-alert-body">
+                  <CardContent className="p-5 pl-7">
                     {/* Header row */}
-                    <div className="triage-alert-header">
-                      <div className="triage-alert-badges">
-                        <span className={`triage-badge ${risk.cls} ${risk.pulse ? 'triage-badge--pulse' : ''}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <SeverityBadge severity={risk.severity} className={risk.pulse ? 'animate-pulse' : ''}>
                           {risk.label}
-                        </span>
-                        <span className={`triage-badge-status ${status.cls}`}>
+                        </SeverityBadge>
+                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-md border ${status.cls}`}>
                           {status.label}
                         </span>
                         {alert.clinicalCategory && (
-                          <span className="triage-category-tag">{alert.clinicalCategory}</span>
+                          <span className="px-2 py-0.5 text-xs font-semibold rounded-md bg-dark-sunken border border-dark-rule text-ink-tertiary">
+                            {alert.clinicalCategory}
+                          </span>
                         )}
                       </div>
-                      <span className="triage-alert-time">{timeAgo(alert.createdAt)}</span>
+                      <span className="text-xs text-ink-muted whitespace-nowrap">{timeAgo(alert.createdAt)}</span>
                     </div>
 
                     {/* Patient info */}
                     {alert.patient && (
-                      <div className="triage-patient-info">
-                        <span className="triage-patient-name">
+                      <div className="mb-4">
+                        <span className="font-bold text-ink-primary text-lg">
                           {alert.patient.firstName} {alert.patient.lastName}
                         </span>
                         {alert.patient.age && (
-                          <span className="triage-patient-meta"> · {alert.patient.age}y</span>
+                          <span className="text-ink-secondary ml-2">· {alert.patient.age}y</span>
                         )}
                         {alert.patient.gender && (
-                          <span className="triage-patient-meta"> · {alert.patient.gender}</span>
+                          <span className="text-ink-secondary ml-2">· {alert.patient.gender}</span>
                         )}
                       </div>
                     )}
 
                     {/* Suggested action — protocol-neutral */}
                     {alert.suggestedAction && (
-                      <div className="triage-action-block">
-                        <span className="triage-action-label">Suggested action</span>
-                        <span className="triage-action-text">{alert.suggestedAction}</span>
+                      <div className="mb-4 p-3 rounded-md bg-dark border border-dark-rule">
+                        <span className="block text-xs font-bold uppercase tracking-wider text-ink-tertiary mb-1">Suggested action</span>
+                        <span className="text-sm text-ink-primary font-medium">{alert.suggestedAction}</span>
                       </div>
                     )}
 
                     {/* Red flags */}
                     {alert.redFlags?.length > 0 && (
-                      <div className="triage-flags">
+                      <div className="flex flex-col gap-2 mb-4">
                         {alert.redFlags.map((f: RedFlag, i: number) => (
-                          <div key={i} className="triage-flag-item">
-                            <span className="triage-flag-desc">{f.description}</span>
+                          <div key={i} className="flex items-start gap-2">
+                            <span className="text-signal-critical mt-0.5 text-sm">🚩</span>
+                            <span className="text-sm text-ink-secondary">{f.description}</span>
                           </div>
                         ))}
                       </div>
                     )}
 
-                    {/* Time to intervention */}
-                    {alert.timeToInterventionMinutes && canAct && (
-                      <div className="triage-tti">
-                        ⏱ Recommended intervention within{' '}
-                        <strong>{alert.timeToInterventionMinutes} min</strong>
+                    <div className="flex items-center justify-between mt-6">
+                      {/* Time to intervention */}
+                      <div>
+                        {alert.timeToInterventionMinutes && canAct && (
+                          <div className="text-sm text-ink-secondary flex items-center gap-2">
+                            <span>⏱</span> Recommended intervention within{' '}
+                            <strong className="text-ink-primary">{alert.timeToInterventionMinutes} min</strong>
+                          </div>
+                        )}
                       </div>
-                    )}
 
-                    {/* Actions */}
-                    <div className="triage-actions">
-                      {canAck && (
-                        <button
-                          id={`ack-${alert.id}`}
-                          className="triage-btn triage-btn-ack"
-                          onClick={() => handleAcknowledge(alert.id)}
-                          aria-label={`Acknowledge alert ${alert.id}`}
-                        >
-                          ✓ Acknowledge
-                        </button>
-                      )}
-                      {canAct && (
-                        <>
-                          <button
-                            id={`resolve-${alert.id}`}
-                            className="triage-btn triage-btn-resolve"
-                            onClick={() => handleResolve(alert.id)}
-                            aria-label={`Resolve alert ${alert.id}`}
+                      {/* Actions */}
+                      <div className="flex items-center gap-2">
+                        {canAck && (
+                          <Button
+                            id={`ack-${alert.id}`}
+                            variant="secondary"
+                            onClick={() => handleAcknowledge(alert.id)}
+                            aria-label={`Acknowledge alert ${alert.id}`}
                           >
-                            ✔ Resolve
-                          </button>
-                          <button
-                            id={`escalate-${alert.id}`}
-                            className="triage-btn triage-btn-escalate"
-                            onClick={() => handleEscalate(alert.id)}
-                            aria-label={`Escalate alert ${alert.id}`}
-                          >
-                            ↑ Escalate
-                          </button>
-                        </>
-                      )}
+                            ✓ Acknowledge
+                          </Button>
+                        )}
+                        {canAct && (
+                          <>
+                            <Button
+                              id={`resolve-${alert.id}`}
+                              variant="default"
+                              onClick={() => handleResolve(alert.id)}
+                              aria-label={`Resolve alert ${alert.id}`}
+                            >
+                              ✔ Resolve
+                            </Button>
+                            <Button
+                              id={`escalate-${alert.id}`}
+                              variant="destructive"
+                              onClick={() => handleEscalate(alert.id)}
+                              aria-label={`Escalate alert ${alert.id}`}
+                              className="bg-signal-warning text-signal-warning border border-signal-warning hover:bg-signal-warning"
+                            >
+                              ↑ Escalate
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
         )}
 
         {/* Disclaimer */}
-        <div className="triage-disclaimer fade-in">
-          🔒 <strong>Clinical Safety Notice:</strong> These alerts indicate{' '}
-          <em>potential red flags detected by a deterministic rules engine</em>, not diagnoses.
+        <div className="p-4 rounded-lg bg-dark-sunken border border-dark-rule text-sm text-ink-secondary">
+          🔒 <strong className="text-ink-primary">Clinical Safety Notice:</strong> These alerts indicate{' '}
+          <em className="text-ink-primary italic">potential red flags detected by a deterministic rules engine</em>, not diagnoses.
           All alerts require assessment by a qualified clinical professional.
           Suggested actions follow hospital protocols and are advisory only.
         </div>

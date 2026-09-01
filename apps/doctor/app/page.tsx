@@ -2,6 +2,12 @@
 
 import './globals.css';
 import Link from 'next/link';
+import { Button } from '../components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { SeverityBadge } from '../components/ui/severity-badge';
+import { DataMono } from '../components/ui/data-mono';
+import { NavItem } from '../components/ui/nav-item';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentDoctorUser, signOutDoctor, type DoctorUser } from '../lib/auth';
@@ -47,11 +53,11 @@ const SEED_QUEUE = [
 
 // ── Risk level helpers ────────────────────────────────────────
 function riskBadge(risk: string) {
-  const map: Record<string, string> = {
-    EMERGENCY:     'badge badge-emergency',
-    HIGH_PRIORITY: 'badge badge-high-priority',
-    WARNING:       'badge badge-warning',
-    NORMAL:        'badge badge-normal',
+  const map: Record<string, "critical" | "warning" | "default"> = {
+    EMERGENCY:     'critical',
+    HIGH_PRIORITY: 'warning',
+    WARNING:       'warning',
+    NORMAL:        'default',
   };
   const labels: Record<string, string> = {
     EMERGENCY:     '🚨 Emergency',
@@ -59,13 +65,13 @@ function riskBadge(risk: string) {
     WARNING:       '⚡ Warning',
     NORMAL:        '✓ Normal',
   };
-  return <span className={map[risk] ?? 'badge badge-normal'}>{labels[risk] ?? risk}</span>;
+  return <SeverityBadge severity={map[risk] ?? 'default'}>{labels[risk] ?? risk}</SeverityBadge>;
 }
 
 function rowClass(risk: string) {
-  if (risk === 'EMERGENCY')    return 'row-emergency';
-  if (risk === 'HIGH_PRIORITY') return 'row-high';
-  return '';
+  if (risk === 'EMERGENCY')    return 'bg-signal-critical/5 hover:bg-signal-critical/10 border-l-2 border-signal-critical';
+  if (risk === 'HIGH_PRIORITY') return 'bg-signal-warning/5 hover:bg-signal-warning/10 border-l-2 border-signal-warning';
+  return 'hover:bg-dark-raised border-l-2 border-transparent';
 }
 
 function MediKioskLogo() {
@@ -267,74 +273,62 @@ export default function DoctorPortalPage() {
 
   // ── Render ──────────────────────────────────────────────────
   return (
-    <div className="portal-layout">
+    <div className="flex h-screen w-full overflow-hidden bg-dark">
       {/* ── Sidebar ── */}
-      <aside className="sidebar" role="navigation" aria-label="Doctor portal navigation">
+      <aside className="w-64 flex flex-col border-r border-dark-rule bg-dark-raised flex-shrink-0" role="navigation" aria-label="Doctor portal navigation">
         {/* Logo */}
-        <div className="sidebar-logo">
-          <div className="sidebar-logo-icon" aria-hidden="true">
+        <div className="flex items-center gap-3 p-5 border-b border-dark-rule">
+          <div className="text-accent" aria-hidden="true">
             <MediKioskLogo />
           </div>
           <div>
-            <div className="sidebar-logo-name">MediKiosk</div>
-            <div className="sidebar-logo-sub">Doctor Portal</div>
+            <div className="font-semibold text-ink-primary tracking-tight text-lg">MediKiosk</div>
+            <div className="text-xs text-ink-tertiary">Doctor Portal</div>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="sidebar-nav">
-          <div className="nav-section-label">OPD</div>
-          <Link href="/" className="nav-item active" aria-current="page">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1">
+          <div className="text-xs font-semibold uppercase tracking-wider text-ink-muted mt-5 mb-2 px-3">OPD</div>
+          <Link href="/" passHref legacyBehavior><NavItem active aria-current="page"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M2 6h12M2 10h12M6 2v12M10 2v12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
             </svg>
-            Patient Queue
-          </Link>
-          <Link href="/triage" className="nav-item">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            Patient Queue</NavItem></Link>
+          <Link href="/triage" passHref legacyBehavior><NavItem><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M8 2L14 9H2L8 2Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
               <path d="M8 6v3M8 11h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
-            Real-time Triage
-          </Link>
-          <Link href="/history" className="nav-item">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            Real-time Triage</NavItem></Link>
+          <Link href="/history" passHref legacyBehavior><NavItem><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M8 3v5l3 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
               <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2" />
             </svg>
-            Past Encounters
-          </Link>
+            Past Encounters</NavItem></Link>
 
-          <div className="nav-section-label">Portals</div>
-          <a href="http://localhost:3000" className="nav-item" target="_blank" rel="noopener noreferrer">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <div className="text-xs font-semibold uppercase tracking-wider text-ink-muted mt-5 mb-2 px-3">Portals</div>
+          <NavItem href="http://localhost:3000" target="_blank" rel="noopener noreferrer"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
               <path d="M5 13v2M11 13v2M3 15h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
             </svg>
-            Patient Kiosk
-          </a>
-          <a href="http://localhost:3002" className="nav-item" target="_blank" rel="noopener noreferrer">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            Patient Kiosk</NavItem>
+          <NavItem href="http://localhost:3002" target="_blank" rel="noopener noreferrer"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M8 1L14 4.5V11.5L8 15L2 11.5V4.5L8 1Z" stroke="currentColor" strokeWidth="1.2" fill="none" />
             </svg>
-            Admin Console
-          </a>
+            Admin Console</NavItem>
         </nav>
 
         {/* User section */}
-        <div className="sidebar-user-section">
+        <div className="p-4 border-t border-dark-rule flex flex-col gap-3">
           {user && (
-            <div className="sidebar-user-badge">
-              <div className="sidebar-user-avatar" aria-hidden="true">{initials}</div>
-              <div className="sidebar-user-info">
-                <div className="sidebar-user-name">{user.fullName}</div>
-                <div className="sidebar-user-role">{user.role}</div>
+            <div className="flex items-center gap-3 p-3 bg-dark-sunken rounded-lg border border-dark-rule">
+              <div className="w-9 h-9 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-sm border border-accent/20" aria-hidden="true">{initials}</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold truncate text-ink-primary">{user.fullName}</div>
+                <div className="text-xs text-ink-tertiary truncate uppercase tracking-wider font-medium">{user.role}</div>
               </div>
             </div>
           )}
-          <button
-            id="doctor-signout-btn"
-            className="nav-item nav-item-signout"
+          <Button id="doctor-signout-btn" variant="ghost" className="w-full justify-start text-[#FCA5A5] hover:text-[#F87171] hover:bg-[#FCA5A5]/10 gap-2"
             onClick={handleSignOut}
             disabled={signingOut}
             aria-label="Sign out of doctor portal"
@@ -343,63 +337,63 @@ export default function DoctorPortalPage() {
               <path d="M6 14H3a1 1 0 01-1-1V3a1 1 0 011-1h3M11 11l3-3-3-3M7 8h7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             {signingOut ? 'Signing out…' : 'Sign Out'}
-          </button>
+          </Button>
         </div>
       </aside>
 
       {/* ── Main Content ── */}
-      <main className="portal-main">
+      <main className="flex-1 flex flex-col overflow-hidden bg-dark">
         {/* Topbar */}
-        <div className="portal-topbar">
+        <div className="flex items-center justify-between p-6 border-b border-dark-rule bg-dark-raised flex-shrink-0">
           <div>
-            <h1 className="portal-topbar-title">
+            <h1 className="text-2xl font-semibold text-ink-primary tracking-tight">
               {greeting}, Dr. {user?.fullName.split(' ').pop() ?? 'Doctor'}
             </h1>
-            <p className="portal-topbar-sub">
+            <p className="text-sm text-ink-secondary mt-1">
               {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               {' · '}OPD Queue
             </p>
           </div>
-          <div className="portal-topbar-right">
+          <div className="flex items-center gap-5">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-              <div className="status-dot" aria-hidden="true" />
+              <div className="w-2 h-2 rounded-full bg-[#10B981]" aria-hidden="true" />
               Realtime
             </div>
             <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{user?.fullName}</span>
-            <div className="topbar-avatar" aria-hidden="true">{initials}</div>
+            <div className="w-9 h-9 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-sm border border-accent/20" aria-hidden="true">{initials}</div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="portal-content">
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
           {/* Stats */}
-          <div className="stats-grid fade-in">
-            <div className="stat-card">
-              <div className="stat-label">In Queue</div>
-              <div className="stat-value">{totalWaiting}</div>
-            </div>
-            <div className="stat-card" style={{ borderColor: emergency > 0 ? 'rgba(239,68,68,0.4)' : undefined }}>
-              <div className="stat-label">🚨 Emergency</div>
-              <div className="stat-value" style={{ color: emergency > 0 ? '#FCA5A5' : undefined }}>{emergency}</div>
-            </div>
-            <div className="stat-card" style={{ borderColor: highPriority > 0 ? 'rgba(245,158,11,0.4)' : undefined }}>
-              <div className="stat-label">⚠ High Priority</div>
-              <div className="stat-value" style={{ color: highPriority > 0 ? '#FCD34D' : undefined }}>{highPriority}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">System Status</div>
-              <div className="stat-value" style={{ color: 'var(--color-primary)', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '0.25rem' }}>
-                <div className="status-dot" aria-hidden="true" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in fade-in">
+            <Card className="p-5 flex flex-col gap-2">
+              <div className="text-sm text-ink-secondary font-medium">In Queue</div>
+              <div className="text-3xl font-semibold text-ink-primary">{totalWaiting}</div>
+            </Card>
+            <Card className="p-5 flex flex-col gap-2" style={{ borderColor: emergency > 0 ? 'rgba(239,68,68,0.4)' : undefined }}>
+              <div className="text-sm text-ink-secondary font-medium">🚨 Emergency</div>
+              <div className="text-3xl font-semibold text-ink-primary" style={{ color: emergency > 0 ? '#FCA5A5' : undefined }}>{emergency}</div>
+            </Card>
+            <Card className="p-5 flex flex-col gap-2" style={{ borderColor: highPriority > 0 ? 'rgba(245,158,11,0.4)' : undefined }}>
+              <div className="text-sm text-ink-secondary font-medium">⚠ High Priority</div>
+              <div className="text-3xl font-semibold text-ink-primary" style={{ color: highPriority > 0 ? '#FCD34D' : undefined }}>{highPriority}</div>
+            </Card>
+            <Card className="p-5 flex flex-col gap-2">
+              <div className="text-sm text-ink-secondary font-medium">System Status</div>
+              <div className="text-3xl font-semibold text-ink-primary" style={{ color: 'var(--color-primary)', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '0.25rem' }}>
+                <div className="w-2 h-2 rounded-full bg-[#10B981]" aria-hidden="true" />
                 Active
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* Queue Table */}
-          <div className="card fade-in fade-in-1">
-            <div className="card-header">
-              <h2 className="card-title">Patient OPD Queue</h2>
-              <button className="btn btn-ghost" onClick={fetchLiveQueue} disabled={isLoadingQueue} aria-label="Refresh queue">
+          <Card className="flex flex-col animate-in fade-in slide-in-from-bottom-2">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-dark-rule pb-4">
+              <CardTitle>Patient OPD Queue</CardTitle>
+              <Button variant="ghost" onClick={fetchLiveQueue} disabled={isLoadingQueue} aria-label="Refresh queue">
                 {isLoadingQueue ? (
                   <><div style={{ width: 14, height: 14, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />Refreshing…</>
                 ) : (
@@ -410,20 +404,20 @@ export default function DoctorPortalPage() {
                     Refresh
                   </>
                 )}
-              </button>
-            </div>
+              </Button>
+            </CardHeader>
 
-            <div style={{ overflowX: 'auto' }}>
-              <table className="queue-table" role="table" aria-label="Patient OPD queue">
-                <thead>
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full text-left text-sm" role="table" aria-label="Patient OPD queue">
+                <thead className="border-b border-dark-rule text-ink-muted text-xs uppercase tracking-wider bg-dark-sunken">
                   <tr>
-                    <th scope="col">Token</th>
-                    <th scope="col">Patient</th>
-                    <th scope="col">Age / Sex</th>
-                    <th scope="col">Chief Complaint</th>
-                    <th scope="col">Priority</th>
-                    <th scope="col">Status</th>
-                    <th scope="col"><span className="sr-only">Actions</span></th>
+                    <th scope="col" className="px-4 py-3 font-medium">Token</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Patient</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Age / Sex</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Chief Complaint</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Priority</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Status</th>
+                    <th scope="col" className="px-4 py-3 font-medium"><span className="sr-only">Actions</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -434,60 +428,57 @@ export default function DoctorPortalPage() {
                       onClick={() => openPatientDossier(item)}
                       aria-label={`Open ${item.patient?.first_name} ${item.patient?.last_name} dossier`}
                     >
-                      <td>
-                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.875rem', color: 'var(--color-primary)' }}>
-                          {item.opdToken}
-                        </span>
+                      <td className="px-4 py-3 border-b border-dark-rule">
+                        <DataMono>{item.opdToken}</DataMono>
                       </td>
-                      <td style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                      <td className="px-4 py-3 border-b border-dark-rule" style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
                         {item.patient?.first_name} {item.patient?.last_name}
                       </td>
-                      <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.825rem' }}>
+                      <td className="px-4 py-3 border-b border-dark-rule" style={{ color: 'var(--color-text-secondary)', fontSize: '0.825rem' }}>
                         {item.patient?.age ? `${item.patient.age}y` : '—'} / {item.patient?.gender || '—'}
                       </td>
-                      <td style={{ color: 'var(--color-text-secondary)', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.825rem' }}>
+                      <td className="px-4 py-3 border-b border-dark-rule" style={{ color: 'var(--color-text-secondary)', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.825rem' }}>
                         {item.chiefComplaint}
                       </td>
-                      <td>{riskBadge(item.riskLevel || 'NORMAL')}</td>
-                      <td style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                      <td className="px-4 py-3 border-b border-dark-rule">{riskBadge(item.riskLevel || 'NORMAL')}</td>
+                      <td className="px-4 py-3 border-b border-dark-rule" style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                         {item.summaryStatus === 'CONFIRMED'
                           ? <span style={{ color: '#6EE7B7' }}>✓ Confirmed</span>
                           : item.summaryStatus
-                            ? <span className="ai-label">AI Draft</span>
+                            ? <span className="inline-flex items-center rounded-md bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent border border-accent/20">AI Draft</span>
                             : <span style={{ color: 'var(--color-text-hint)' }}>Pending</span>
                         }
                       </td>
-                      <td>
-                        <button
-                          className="btn btn-primary"
+                      <td className="px-4 py-3 border-b border-dark-rule">
+                        <Button variant="default"
                           style={{ padding: '0.375rem 0.875rem', fontSize: '0.78rem' }}
                           onClick={(e) => { e.stopPropagation(); openPatientDossier(item); }}
                           aria-label={`Open clinical view for ${item.patient?.first_name}`}
                         >
                           Clinical View →
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
 
       {/* ── Patient Clinical Dossier Modal ── */}
       {selectedPatient && (
         <div
-          className="modal-backdrop"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-in fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) setSelectedPatient(null); }}
           role="dialog"
           aria-modal="true"
           aria-label={`Clinical dossier for ${selectedPatient.patient?.first_name} ${selectedPatient.patient?.last_name}`}
         >
-          <div className="modal-panel" role="document">
+          <div className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl bg-dark border border-dark-ruleStrong shadow-2xl overflow-hidden animate-in zoom-in-95" role="document">
             {/* Modal Header */}
-            <div className="modal-header">
+            <div className="flex items-start justify-between p-6 border-b border-dark-rule bg-dark-raised">
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: '0.375rem' }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -507,19 +498,19 @@ export default function DoctorPortalPage() {
                   </div>
                 </div>
               </div>
-              <button className="btn btn-ghost" onClick={() => setSelectedPatient(null)} aria-label="Close dossier">
+              <Button variant="ghost" onClick={() => setSelectedPatient(null)} aria-label="Close dossier">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                   <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
                 Close
-              </button>
+              </Button>
             </div>
 
             {/* Modal Body */}
-            <div className="modal-body">
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8 bg-dark">
               {/* Success message */}
               {reviewSuccessMsg && (
-                <div className="alert alert-success" role="status">
+                <div className="flex items-center gap-2 p-4 bg-[#10B981]/10 border border-[#10B981]/20 text-[#10B981] rounded-lg text-sm font-medium" role="status">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <path d="M3 8l4 4 6-7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -537,7 +528,7 @@ export default function DoctorPortalPage() {
                 <>
                   {/* AI Generated Banner */}
                   <div style={{ padding: '0.75rem 1rem', background: 'rgba(0,201,177,0.06)', border: '1px solid var(--color-border-primary)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                    <span className="ai-label">AI Generated</span>
+                    <span className="inline-flex items-center rounded-md bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent border border-accent/20">AI Generated</span>
                     <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                       AI-generated fields are suggestions. Review, edit, and confirm before saving.
                     </span>
@@ -545,13 +536,10 @@ export default function DoctorPortalPage() {
 
                   {/* Chief Complaint */}
                   <div>
-                    <label className="modal-section-label" htmlFor="doc-chief-complaint">
+                    <label className="block text-xs font-semibold text-ink-secondary mb-2 uppercase tracking-wider" htmlFor="doc-chief-complaint">
                       Chief Complaint Summary
                     </label>
-                    <input
-                      id="doc-chief-complaint"
-                      type="text"
-                      className="form-input"
+                    <Input id="doc-chief-complaint" type="text" 
                       value={chiefComplaintEdit}
                       onChange={(e) => setChiefComplaintEdit(e.target.value)}
                       placeholder="Chief complaint summary…"
@@ -560,12 +548,10 @@ export default function DoctorPortalPage() {
 
                   {/* HPI Narrative */}
                   <div>
-                    <label className="modal-section-label" htmlFor="doc-hpi">
+                    <label className="block text-xs font-semibold text-ink-secondary mb-2 uppercase tracking-wider" htmlFor="doc-hpi">
                       History of Present Illness (AI Narrative)
                     </label>
-                    <textarea
-                      id="doc-hpi"
-                      className="form-input"
+                    <textarea id="doc-hpi" className="flex w-full rounded-md border border-dark-rule bg-dark-sunken px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent" 
                       rows={4}
                       value={hpiEdit}
                       onChange={(e) => setHpiEdit(e.target.value)}
@@ -577,22 +563,16 @@ export default function DoctorPortalPage() {
                   {/* Past History + Medications */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                     <div>
-                      <label className="modal-section-label" htmlFor="doc-past-history">Past Medical History</label>
-                      <input
-                        id="doc-past-history"
-                        type="text"
-                        className="form-input"
+                      <label className="block text-xs font-semibold text-ink-secondary mb-2 uppercase tracking-wider" htmlFor="doc-past-history">Past Medical History</label>
+                      <Input id="doc-past-history" type="text" 
                         value={pastHistoryEdit}
                         onChange={(e) => setPastHistoryEdit(e.target.value)}
                         placeholder="Past history…"
                       />
                     </div>
                     <div>
-                      <label className="modal-section-label" htmlFor="doc-medications">Active Medications</label>
-                      <input
-                        id="doc-medications"
-                        type="text"
-                        className="form-input"
+                      <label className="block text-xs font-semibold text-ink-secondary mb-2 uppercase tracking-wider" htmlFor="doc-medications">Active Medications</label>
+                      <Input id="doc-medications" type="text" 
                         value={medicationsEdit}
                         onChange={(e) => setMedicationsEdit(e.target.value)}
                         placeholder="Current medications…"
@@ -602,12 +582,10 @@ export default function DoctorPortalPage() {
 
                   {/* Doctor Notes */}
                   <div>
-                    <label className="modal-section-label" htmlFor="doc-notes">
+                    <label className="block text-xs font-semibold text-ink-secondary mb-2 uppercase tracking-wider" htmlFor="doc-notes">
                       Physician Examination Notes & Prescription
                     </label>
-                    <textarea
-                      id="doc-notes"
-                      className="form-input"
+                    <textarea id="doc-notes" className="flex w-full rounded-md border border-dark-rule bg-dark-sunken px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent" 
                       rows={3}
                       placeholder="Enter examination findings, prescription, and follow-up advice…"
                       value={doctorNotes}
@@ -620,37 +598,34 @@ export default function DoctorPortalPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="modal-footer">
+            <div className="flex items-center justify-between p-6 border-t border-dark-rule bg-dark-raised">
               {/* Integration buttons */}
               <div style={{ display: 'flex', gap: '0.625rem' }}>
-                <button className="btn btn-secondary" onClick={handlePushToAbdm} aria-label="Push record to ABDM">
+                <Button variant="outline" onClick={handlePushToAbdm} aria-label="Push record to ABDM">
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                     <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
                   Push to ABDM
-                </button>
-                <button
-                  className="btn btn-secondary"
+                </Button>
+                <Button variant="outline"
                   onClick={() => alert('Encounter synced with Hospital Information System (HIS).')}
                   aria-label="Sync to HIS"
                 >
                   Sync to HIS
-                </button>
+                </Button>
               </div>
 
               {/* Review action buttons */}
               <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button
-                  className="btn btn-secondary"
+                <Button variant="outline"
                   style={{ color: '#FCA5A5', borderColor: 'rgba(239,68,68,0.35)' }}
                   onClick={() => handleReviewAction('REJECT')}
                   disabled={isSubmittingReview || isLoadingDossier}
                   aria-label="Reject AI summary"
                 >
                   Reject AI
-                </button>
-                <button
-                  className="btn btn-primary"
+                </Button>
+                <Button variant="default"
                   onClick={() => handleReviewAction('MODIFY')}
                   disabled={isSubmittingReview || isLoadingDossier}
                   aria-label="Confirm and finalize clinical summary"
@@ -665,7 +640,7 @@ export default function DoctorPortalPage() {
                       Confirm & Finalize
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

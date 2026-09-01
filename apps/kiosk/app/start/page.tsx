@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Button } from '../../components/ui/button';
 
 const LANGUAGES = [
   { code: 'hi', name: 'Hindi',   nativeName: 'हिन्दी',   script: 'देवनागरी', flag: '🇮🇳' },
@@ -35,101 +36,60 @@ export default function LanguageSelectionPage() {
   };
 
   return (
-    <div style={{ height: '100vh', maxHeight: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: 'var(--color-surface, #06090E)', color: 'var(--color-text-primary, #F0F4F8)' }}>
+    <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-dark text-ink-primary">
       {/* ── Compact Fixed Header ── */}
       <header
-        style={{
-          height: '56px',
-          padding: '0 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
-          backgroundColor: 'rgba(6, 9, 14, 0.95)',
-          backdropFilter: 'blur(16px)',
-          flexShrink: 0,
-        }}
+        className="h-14 px-6 flex items-center justify-between border-b border-dark-rule bg-dark shrink-0"
         role="banner"
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="flex items-center gap-2.5">
           <div
-            style={{
-              width: '28px',
-              height: '28px',
-              backgroundColor: 'var(--color-primary, #00C9B1)',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#06090E',
-            }}
+            className="w-7 h-7 bg-accent rounded-md flex items-center justify-center text-dark"
             aria-hidden="true"
           >
             <MediKioskLogo />
           </div>
           <div>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700 }}>MediKiosk</span>
-            <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', marginLeft: '8px' }}>AI Clinical Intake</span>
+            <span className="font-sans text-[15px] font-bold">MediKiosk</span>
+            <span className="text-[11px] text-ink-muted ml-2">AI Clinical Intake</span>
           </div>
         </div>
 
         {/* Step progress */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ display: 'flex', gap: '4px' }} role="progressbar" aria-label="Step 1 of 5" aria-valuenow={1} aria-valuemin={1} aria-valuemax={5}>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1" role="progressbar" aria-label="Step 1 of 5" aria-valuenow={1} aria-valuemin={1} aria-valuemax={5}>
             {[1, 2, 3, 4, 5].map(step => (
               <span
                 key={step}
-                style={{
-                  width: step === 1 ? '20px' : '6px',
-                  height: '6px',
-                  borderRadius: '9999px',
-                  backgroundColor: step === 1 ? 'var(--color-primary, #00C9B1)' : 'rgba(255, 255, 255, 0.15)',
-                  transition: 'all 200ms ease',
-                }}
+                className={`h-1.5 rounded-full transition-all duration-200 ${
+                  step === 1 ? 'w-5 bg-accent' : 'w-1.5 bg-dark-ruleStrong'
+                }`}
                 aria-hidden="true"
               />
             ))}
           </div>
-          <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', fontWeight: 600 }}>1 / 5</span>
+          <span className="text-[11px] text-ink-muted font-semibold">1 / 5</span>
         </div>
       </header>
 
-      {/* ── Main Viewport Content (Flex Container - No Scroll) ── */}
-      <main
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          maxWidth: '820px',
-          width: '100%',
-          margin: '0 auto',
-          padding: '16px 20px 12px',
-          boxSizing: 'border-box',
-          overflow: 'hidden',
-        }}
-      >
+      {/* ── Main Viewport Content ── */}
+      <main className="flex-1 flex flex-col justify-between max-w-[820px] w-full mx-auto px-5 py-4 box-border overflow-hidden">
         {/* Top: Welcome & Heading */}
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-primary, #00C9B1)', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 2px 0' }}>
+        <div className="text-center">
+          <p className="text-[11px] font-bold text-accent uppercase tracking-widest mb-0.5">
             Welcome · स्वागत है · வரவேற்பு
           </p>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 3vh, 32px)', fontWeight: 800, margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>
-            Choose your <span style={{ color: 'var(--color-primary, #00C9B1)' }}>language</span>
+          <h1 className="font-sans text-[clamp(24px,3vh,32px)] font-extrabold mb-1 tracking-tight">
+            Choose your <span className="text-accent">language</span>
           </h1>
-          <p style={{ fontSize: '13px', color: 'rgba(240, 244, 248, 0.65)', margin: 0 }}>
+          <p className="text-[13px] text-ink-secondary m-0">
             Select your preferred language to begin · कृपया अपनी भाषा चुनें
           </p>
         </div>
 
         {/* Middle: Compact 2x3 Language Grid */}
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '10px',
-            margin: '8px 0',
-          }}
+          className="grid grid-cols-3 gap-2.5 my-2"
           role="radiogroup"
           aria-label="Language selection"
         >
@@ -142,51 +102,23 @@ export default function LanguageSelectionPage() {
                 role="radio"
                 aria-checked={isSelected}
                 aria-label={`${lang.name} — ${lang.nativeName}`}
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: 'clamp(72px, 11vh, 90px)',
-                  padding: '8px 12px',
-                  backgroundColor: isSelected ? 'rgba(0, 201, 177, 0.12)' : 'rgba(255, 255, 255, 0.03)',
-                  border: `1.5px solid ${isSelected ? 'var(--color-primary, #00C9B1)' : 'rgba(255, 255, 255, 0.08)'}`,
-                  borderRadius: '12px',
-                  boxShadow: isSelected ? '0 0 0 3px rgba(0, 201, 177, 0.2), 0 4px 16px rgba(0, 201, 177, 0.15)' : 'none',
-                  cursor: 'pointer',
-                  transition: 'all 150ms ease',
-                  outline: 'none',
-                }}
+                className={`relative flex flex-col items-center justify-center h-[clamp(72px,11vh,90px)] px-3 py-2 rounded-xl transition-all duration-150 outline-none border-2
+                  ${isSelected ? 'bg-accent-wash border-accent' : 'bg-dark-raised border-dark-rule hover:border-dark-ruleStrong'}`}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                  <span style={{ fontSize: '16px', lineHeight: 1 }}>{lang.flag}</span>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 700, color: '#F0F4F8' }}>
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className="text-base leading-none">{lang.flag}</span>
+                  <span className="font-sans text-base font-bold text-ink-primary">
                     {lang.nativeName}
                   </span>
                 </div>
-                <span style={{ fontSize: '12px', color: isSelected ? 'var(--color-primary, #00C9B1)' : 'rgba(240, 244, 248, 0.45)', fontWeight: 500 }}>
+                <span className={`text-xs font-medium ${isSelected ? 'text-accent' : 'text-ink-secondary'}`}>
                   {lang.name}
                 </span>
 
                 {isSelected && (
                   <div
                     aria-hidden="true"
-                    style={{
-                      position: 'absolute',
-                      top: '6px',
-                      right: '6px',
-                      width: '18px',
-                      height: '18px',
-                      borderRadius: '50%',
-                      backgroundColor: 'var(--color-primary, #00C9B1)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#06090E',
-                      fontSize: '10px',
-                      fontWeight: 800,
-                    }}
+                    className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-accent flex items-center justify-center text-dark text-[10px] font-extrabold"
                   >
                     ✓
                   </div>
@@ -198,87 +130,51 @@ export default function LanguageSelectionPage() {
 
         {/* Action: Continue Button */}
         <div>
-          <button
+          <Button
             onClick={handleContinue}
             disabled={!selected || isLoading}
             aria-label="Continue to patient identification"
-            style={{
-              width: '100%',
-              height: '46px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              backgroundColor: 'var(--color-primary, #00C9B1)',
-              color: '#06090E',
-              fontFamily: 'var(--font-display)',
-              fontSize: '15px',
-              fontWeight: 700,
-              borderRadius: '10px',
-              border: 'none',
-              cursor: selected ? 'pointer' : 'not-allowed',
-              opacity: selected ? 1 : 0.35,
-              transition: 'all 150ms ease',
-              boxShadow: selected ? '0 4px 16px rgba(0, 201, 177, 0.25)' : 'none',
-            }}
+            className="w-full h-[46px] rounded-[10px] text-[15px] font-bold"
           >
             {isLoading ? (
               <span>Setting language…</span>
             ) : (
               <>
                 <span>Continue</span>
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true" className="ml-2">
                   <path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </>
             )}
-          </button>
+          </Button>
         </div>
 
         {/* Bottom: Notices & Navigation link */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+        <div className="flex flex-col gap-1.5 mt-0.5">
           <div
-            style={{
-              padding: '6px 12px',
-              backgroundColor: 'rgba(16, 185, 129, 0.06)',
-              border: '1px solid rgba(16, 185, 129, 0.15)',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
+            className="px-3 py-1.5 bg-accent border border-accent rounded-lg flex items-center gap-2"
             role="note"
           >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', flexShrink: 0 }} />
-            <p style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.75)', margin: 0, lineHeight: 1.4 }}>
-              <strong>Confidential & secure intake.</strong> आपकी जानकारी गोपनीय और सुरक्षित है।
+            <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+            <p className="text-[11px] text-ink-secondary m-0 leading-tight">
+              <strong className="text-ink-primary">Confidential & secure intake.</strong> आपकी जानकारी गोपनीय और सुरक्षित है।
             </p>
           </div>
 
           <div
-            style={{
-              padding: '6px 12px',
-              backgroundColor: 'rgba(239, 68, 68, 0.06)',
-              border: '1px solid rgba(239, 68, 68, 0.15)',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
+            className="px-3 py-1.5 bg-signal-critical border border-signal-critical rounded-lg flex items-center gap-2"
             role="alert"
           >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#EF4444', flexShrink: 0 }} />
-            <p style={{ fontSize: '11px', color: '#FCA5A5', margin: 0, lineHeight: 1.4 }}>
-              <strong>Medical emergency?</strong> Please alert hospital staff immediately. / चिकित्सा आपात: कर्मचारियों को सूचित करें।
+            <span className="w-1.5 h-1.5 rounded-full bg-signal-critical shrink-0" />
+            <p className="text-[11px] text-signal-critical m-0 leading-tight">
+              <strong className="text-signal-critical">Medical emergency?</strong> Please alert hospital staff immediately. / चिकित्सा आपात: कर्मचारियों को सूचित करें।
             </p>
           </div>
 
-          <div style={{ textAlign: 'center', marginTop: '2px' }}>
+          <div className="text-center mt-0.5">
             <Link
               href="/"
-              style={{ fontSize: '12px', color: 'rgba(240, 244, 248, 0.4)', textDecoration: 'none', transition: 'color 150ms' }}
-              onMouseOver={e => (e.currentTarget.style.color = 'rgba(240, 244, 248, 0.8)')}
-              onMouseOut={e => (e.currentTarget.style.color = 'rgba(240, 244, 248, 0.4)')}
+              className="text-xs text-ink-muted hover:text-ink-secondary transition-colors no-underline"
             >
               ← Back to MediKiosk Home
             </Link>

@@ -24,7 +24,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body>
+      <body className="bg-dark text-ink-primary font-sans antialiased">
         {/* Inactivity watcher: warns, abandons the session and resets the kiosk */}
         <IdleWatcher />
         {children}

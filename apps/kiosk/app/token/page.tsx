@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { makeT, speak, stopSpeaking } from '../../lib/i18n';
+import { Button } from '../../components/ui/button';
 
 const RESET_SECONDS = 20;
 
@@ -72,126 +73,72 @@ export default function TokenPage() {
   }, [router, resetKiosk]);
 
   return (
-    <div style={{ height: '100vh', maxHeight: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: 'var(--color-surface, #06090E)', color: 'var(--color-text-primary, #F0F4F8)' }}>
+    <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-dark text-ink-primary">
       {/* ── Header ── */}
       <header
-        style={{
-          height: '56px',
-          padding: '0 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
-          backgroundColor: 'rgba(6, 9, 14, 0.95)',
-          backdropFilter: 'blur(16px)',
-          flexShrink: 0,
-        }}
+        className="h-14 px-6 flex items-center justify-between border-b border-dark-rule bg-dark shrink-0"
         role="banner"
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="flex items-center gap-2.5">
           <div
-            style={{
-              width: '28px',
-              height: '28px',
-              backgroundColor: 'var(--color-primary, #00C9B1)',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#06090E',
-            }}
+            className="w-7 h-7 bg-accent rounded-md flex items-center justify-center text-dark"
             aria-hidden="true"
           >
             <MediKioskLogo />
           </div>
           <div>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700 }}>MediKiosk</span>
-            <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', marginLeft: '8px' }}>AI Clinical Intake</span>
+            <span className="font-sans text-[15px] font-bold">MediKiosk</span>
+            <span className="text-[11px] text-ink-muted ml-2">AI Clinical Intake</span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ display: 'flex', gap: '4px' }} role="progressbar" aria-label="Step 5 of 5" aria-valuenow={5} aria-valuemin={1} aria-valuemax={5}>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1" role="progressbar" aria-label="Step 5 of 5" aria-valuenow={5} aria-valuemin={1} aria-valuemax={5}>
             {[1, 2, 3, 4, 5].map(step => (
               <span
                 key={step}
-                style={{
-                  width: step === 5 ? '20px' : '6px',
-                  height: '6px',
-                  borderRadius: '9999px',
-                  backgroundColor: 'var(--color-primary, #00C9B1)',
-                  transition: 'all 200ms ease',
-                }}
+                className={`h-1.5 rounded-full transition-all duration-200 ${
+                  step === 5 ? 'w-5 bg-accent' : 'w-1.5 bg-accent/40'
+                }`}
                 aria-hidden="true"
               />
             ))}
           </div>
-          <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', fontWeight: 600 }}>5 / 5</span>
+          <span className="text-[11px] text-ink-muted font-semibold">5 / 5</span>
         </div>
       </header>
 
       {/* ── Main Viewport Content ── */}
-      <main
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          maxWidth: '580px',
-          width: '100%',
-          margin: '0 auto',
-          padding: '16px 20px',
-          boxSizing: 'border-box',
-          textAlign: 'center',
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: 'rgba(13, 18, 25, 0.94)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '20px',
-            padding: '24px 28px',
-            width: '100%',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-          }}
-        >
-          <div style={{ fontSize: '2.5rem', marginBottom: '8px' }} aria-hidden="true">🎟️</div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 800, margin: '0 0 4px 0' }}>
+      <main className="flex-1 flex flex-col justify-center items-center max-w-[580px] w-full mx-auto px-5 py-4 box-border text-center">
+        <div className="bg-dark-raised border border-dark-rule rounded-[20px] p-7 w-full shadow-2xl">
+          <div className="text-4xl mb-2" aria-hidden="true">🎟️</div>
+          <h1 className="font-sans text-2xl font-extrabold mb-1 tracking-tight">
             {t('Your OPD Token', 'आपका ओपीडी टोकन')}
           </h1>
-          <p style={{ fontSize: '13px', color: 'rgba(240, 244, 248, 0.65)', margin: '0 0 16px 0' }}>
+          <p className="text-[13px] text-ink-secondary mb-4">
             {t('Your consultation draft has been sent to the doctor.', 'आपकी जांच रिपोर्ट डॉक्टर को भेज दी गई है।')}
           </p>
 
-          <div
-            style={{
-              padding: '14px 20px',
-              backgroundColor: 'rgba(0, 201, 177, 0.06)',
-              border: '2px dashed var(--color-primary, #00C9B1)',
-              borderRadius: '12px',
-              marginBottom: '16px',
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-primary, #00C9B1)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
+          <div className="px-5 py-3.5 bg-accent/10 border-2 border-dashed border-accent rounded-xl mb-4">
+            <div className="text-[11px] font-bold text-accent uppercase tracking-[0.1em] mb-1">
               {t('TOKEN NUMBER', 'टोकन नंबर')}
             </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 900, color: '#F0F4F8', letterSpacing: '0.04em' }}>
+            <div className="font-sans text-[32px] font-black text-ink-primary tracking-[0.04em]">
               {opdToken || 'OPD-20260901-1042'}
             </div>
           </div>
 
-          <p style={{ fontSize: '12px', color: 'rgba(240, 244, 248, 0.5)', margin: '0 0 16px 0' }}>
+          <p className="text-xs text-ink-muted mb-4">
             {t('Please proceed to Waiting Area 2 and wait for your token to be called.', 'कृपया प्रतीक्षालय 2 में जाएं और अपना टोकन पुकारे जाने की प्रतीक्षा करें।')}
           </p>
 
-          <button
+          <Button
             onClick={resetKiosk}
-            className="btn btn-primary"
-            style={{ width: '100%', height: '44px', fontSize: '14px', fontWeight: 700 }}
+            variant="default"
+            className="w-full h-11 text-sm font-bold"
           >
             {t('Done / Next Patient', 'पूर्ण / अगला मरीज')} ({secondsLeft}s)
-          </button>
+          </Button>
         </div>
       </main>
     </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../lib/api-client';
 import { speak, stopSpeaking } from '../../lib/i18n';
+import { Button } from '../../components/ui/button';
 
 interface ConsentDoc {
   version: string;
@@ -140,203 +141,119 @@ export default function ConsentPage() {
   };
 
   return (
-    <div style={{ height: '100vh', maxHeight: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: 'var(--color-surface, #06090E)', color: 'var(--color-text-primary, #F0F4F8)' }}>
+    <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-dark text-ink-primary">
       {/* ── Compact Header ── */}
       <header
-        style={{
-          height: '56px',
-          padding: '0 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
-          backgroundColor: 'rgba(6, 9, 14, 0.95)',
-          backdropFilter: 'blur(16px)',
-          flexShrink: 0,
-        }}
+        className="h-14 px-6 flex items-center justify-between border-b border-dark-rule bg-dark shrink-0"
         role="banner"
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="flex items-center gap-2.5">
           <div
-            style={{
-              width: '28px',
-              height: '28px',
-              backgroundColor: 'var(--color-primary, #00C9B1)',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#06090E',
-            }}
+            className="w-7 h-7 bg-accent rounded-md flex items-center justify-center text-dark"
             aria-hidden="true"
           >
             <MediKioskLogo />
           </div>
           <div>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700 }}>MediKiosk</span>
-            <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', marginLeft: '8px' }}>AI Clinical Intake</span>
+            <span className="font-sans text-[15px] font-bold">MediKiosk</span>
+            <span className="text-[11px] text-ink-muted ml-2">AI Clinical Intake</span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ display: 'flex', gap: '4px' }} role="progressbar" aria-label="Step 3 of 5" aria-valuenow={3} aria-valuemin={1} aria-valuemax={5}>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1" role="progressbar" aria-label="Step 3 of 5" aria-valuenow={3} aria-valuemin={1} aria-valuemax={5}>
             {[1, 2, 3, 4, 5].map(step => (
               <span
                 key={step}
-                style={{
-                  width: step === 3 ? '20px' : '6px',
-                  height: '6px',
-                  borderRadius: '9999px',
-                  backgroundColor: step === 3 ? 'var(--color-primary, #00C9B1)' : step < 3 ? 'rgba(0, 201, 177, 0.4)' : 'rgba(255, 255, 255, 0.15)',
-                  transition: 'all 200ms ease',
-                }}
+                className={`h-1.5 rounded-full transition-all duration-200 ${
+                  step === 3 ? 'w-5 bg-accent' : step < 3 ? 'w-1.5 bg-accent/40' : 'w-1.5 bg-dark-ruleStrong'
+                }`}
                 aria-hidden="true"
               />
             ))}
           </div>
-          <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', fontWeight: 600 }}>3 / 5</span>
+          <span className="text-[11px] text-ink-muted font-semibold">3 / 5</span>
         </div>
       </header>
 
       {/* ── Main Viewport Content ── */}
-      <main
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          maxWidth: '740px',
-          width: '100%',
-          margin: '0 auto',
-          padding: '16px 20px 14px',
-          boxSizing: 'border-box',
-          overflow: 'hidden',
-        }}
-      >
+      <main className="flex-1 flex flex-col justify-between max-w-[740px] w-full mx-auto px-5 py-4 box-border overflow-hidden">
         {/* Error message */}
         {errorMsg && (
-          <div className="alert alert-error" role="alert">
+          <div className="px-4 py-3 bg-signal-critical border border-signal-critical text-signal-critical rounded-lg text-sm flex items-center gap-2" role="alert">
             <span>⚠️</span> {errorMsg}
           </div>
         )}
 
         {/* Consent Card */}
-        <div
-          style={{
-            backgroundColor: 'rgba(13, 18, 25, 0.94)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            padding: '20px 24px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="bg-dark-raised border border-dark-rule rounded-2xl p-5 flex flex-col gap-3">
+          <div className="flex justify-between items-center">
             <div>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700, margin: 0 }}>
+              <h1 className="font-sans text-xl font-bold m-0">
                 {consentDoc?.title || translate('Consent Form', 'सहमति पत्र')}
               </h1>
-              <p style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', margin: '2px 0 0 0' }}>
+              <p className="text-[11px] text-ink-muted mt-0.5 mb-0">
                 {translate('Document version', 'दस्तावेज़ संस्करण')}: {consentDoc?.version || '1.0'}
               </p>
             </div>
 
-            <button
+            <Button
               onClick={toggleAudio}
-              className="btn btn-secondary"
+              variant="outline"
               disabled={!consentDoc}
-              style={{
-                height: '34px',
-                padding: '0 12px',
-                fontSize: '12px',
-                borderRadius: '9999px',
-                backgroundColor: isAudioPlaying ? 'rgba(0, 201, 177, 0.15)' : 'rgba(255,255,255,0.04)',
-                borderColor: isAudioPlaying ? 'var(--color-primary, #00C9B1)' : 'rgba(255,255,255,0.1)',
-                color: isAudioPlaying ? 'var(--color-primary, #00C9B1)' : '#F0F4F8',
-              }}
+              className={`h-8.5 px-3 text-xs rounded-full ${
+                isAudioPlaying ? 'bg-accent/15 border-accent text-accent' : ''
+              }`}
             >
               🔊 {isAudioPlaying ? translate('Stop Audio', 'रोकें') : translate('Listen to Consent', 'ऑडियो सुनें')}
-            </button>
+            </Button>
           </div>
 
           {/* Consent Body */}
-          <div
-            style={{
-              maxHeight: '160px',
-              overflowY: 'auto',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '8px',
-              padding: '12px 14px',
-              backgroundColor: 'rgba(0, 0, 0, 0.25)',
-              fontSize: '13px',
-              lineHeight: 1.6,
-              color: 'rgba(240, 244, 248, 0.8)',
-            }}
-          >
+          <div className="max-h-[160px] overflow-y-auto border border-dark-rule rounded-lg p-3 bg-black/25 text-[13px] leading-relaxed text-ink-secondary">
             {consentDoc ? consentDoc.body : translate('Loading consent document…', 'सहमति पत्र लोड हो रहा है…')}
           </div>
 
           {/* Checkbox agreement */}
           <div
             onClick={() => setIsChecked(!isChecked)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '10px 14px',
-              backgroundColor: isChecked ? 'rgba(0, 201, 177, 0.08)' : 'rgba(255, 255, 255, 0.02)',
-              border: `1.5px solid ${isChecked ? 'var(--color-primary, #00C9B1)' : 'rgba(255, 255, 255, 0.08)'}`,
-              borderRadius: '10px',
-              cursor: 'pointer',
-              userSelect: 'none',
-              transition: 'all 150ms ease',
-            }}
+            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-[10px] cursor-pointer select-none transition-all duration-150 border-2 ${
+              isChecked ? 'bg-accent/10 border-accent' : 'bg-white/5 border-dark-rule'
+            }`}
           >
             <div
-              style={{
-                width: '20px',
-                height: '20px',
-                borderRadius: '4px',
-                border: `2px solid ${isChecked ? 'var(--color-primary, #00C9B1)' : 'rgba(255,255,255,0.3)'}`,
-                backgroundColor: isChecked ? 'var(--color-primary, #00C9B1)' : 'transparent',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#06090E',
-                fontSize: '12px',
-                fontWeight: 800,
-                flexShrink: 0,
-              }}
+              className={`w-5 h-5 rounded border-2 flex items-center justify-center text-dark text-xs font-extrabold shrink-0 ${
+                isChecked ? 'border-accent bg-accent' : 'border-white/30 bg-transparent'
+              }`}
             >
               {isChecked && '✓'}
             </div>
-            <p style={{ fontSize: '12.5px', color: '#F0F4F8', margin: 0, lineHeight: 1.4 }}>
+            <p className="text-[12.5px] text-ink-primary m-0 leading-snug font-medium">
               <strong>{translate('I understand and grant clinical intake consent.', 'मैं समझता/समझती हूँ और सहमति देता/देती हूँ।')}</strong>
             </p>
           </div>
         </div>
 
         {/* Actions Row */}
-        <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
-          <button
+        <div className="flex gap-2.5 mt-3">
+          <Button
             type="button"
-            className="btn btn-secondary"
+            variant="outline"
             onClick={handleDecline}
             disabled={isLoading}
-            style={{ flex: 1, height: '46px' }}
+            className="flex-1 h-11"
           >
             {translate('Decline & Exit', 'अस्वीकार करें')}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="btn btn-primary"
+            variant="default"
             onClick={handleGrantConsent}
             disabled={!isChecked || isLoading}
-            style={{ flex: 2, height: '46px', opacity: isChecked ? 1 : 0.35, cursor: isChecked ? 'pointer' : 'not-allowed' }}
+            className="flex-[2] h-11"
           >
             {isLoading ? translate('Processing…', 'प्रक्रिया जारी…') : translate('Confirm & Continue →', 'सहमति दें और आगे बढ़ें →')}
-          </button>
+          </Button>
         </div>
       </main>
     </div>

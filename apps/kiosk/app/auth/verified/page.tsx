@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
-import '../../globals.css';
+import Link from 'next/link';
 
 function VerifiedContent() {
   const params    = useSearchParams();
@@ -11,64 +11,49 @@ function VerifiedContent() {
 
   if (hasError) {
     return (
-      <main className="kiosk-screen" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <div style={{ textAlign: 'center', maxWidth: 480, padding: '2rem' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1.25rem' }}>❌</div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.75rem' }}>
+      <main className="flex flex-col items-center justify-center min-h-screen bg-dark text-ink-primary p-6">
+        <div className="text-center w-full max-w-[480px]">
+          <div className="text-6xl mb-5">❌</div>
+          <h1 className="font-sans text-3xl font-extrabold mb-3 tracking-tight">
             Verification Failed
           </h1>
-          <p style={{ color: 'var(--color-text-muted)', marginBottom: '2rem', lineHeight: 1.6 }}>
+          <p className="text-ink-secondary mb-8 leading-relaxed">
             The verification link may have expired or already been used. Please request a new one by registering or logging in.
           </p>
-          <a href="/identify" className="btn btn-primary" style={{ display: 'inline-flex', padding: '0.875rem 2rem' }}>
+          <Link
+            href="/identify"
+            className="inline-flex items-center justify-center rounded-md font-sans font-medium transition-colors bg-accent text-dark hover:bg-accent/90 shadow-card h-11 px-8"
+          >
             Back to Check-in
-          </a>
+          </Link>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="kiosk-screen" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-      <div style={{ textAlign: 'center', maxWidth: 520, padding: '2rem' }}>
+    <main className="flex flex-col items-center justify-center min-h-screen bg-dark text-ink-primary p-6">
+      <div className="text-center w-full max-w-[520px]">
         {/* Animated checkmark */}
-        <div style={{ position: 'relative', display: 'inline-block', marginBottom: '1.5rem' }}>
-          <div style={{
-            width: 96,
-            height: 96,
-            borderRadius: '50%',
-            background: 'rgba(30, 142, 62, 0.12)',
-            border: '2px solid rgba(30, 142, 62, 0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '2.75rem',
-            margin: '0 auto',
-          }}>
+        <div className="relative inline-block mb-6">
+          <div className="w-24 h-24 rounded-full bg-accent border-2 border-accent flex items-center justify-center text-4xl mx-auto">
             ✅
           </div>
         </div>
 
-        <h1 style={{ fontSize: '1.875rem', fontWeight: 900, letterSpacing: '-0.03em', marginBottom: '0.75rem' }}>
+        <h1 className="font-sans text-3xl font-black tracking-tight mb-3">
           Email Verified!
         </h1>
-        <p style={{ color: '#69F0AE', fontSize: '0.95rem', fontWeight: 600, marginBottom: '1rem' }}>
+        <p className="text-accent font-semibold mb-4">
           Your MediKiosk account is now fully activated.
         </p>
-        <p style={{ color: 'var(--color-text-muted)', lineHeight: 1.65, marginBottom: '2.5rem', fontSize: '0.9rem' }}>
+        <p className="text-ink-secondary leading-relaxed mb-10 text-sm">
           You can now sign in with your email and password on any future visit to access your saved medical history.
         </p>
 
         {/* Card with next steps */}
-        <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '1.25rem',
-          padding: '1.5rem',
-          marginBottom: '1.5rem',
-          textAlign: 'left',
-        }}>
-          <p style={{ fontSize: '0.82rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.875rem' }}>
+        <div className="bg-dark-raised border border-dark-rule rounded-2xl p-6 mb-6 text-left shadow-card">
+          <p className="text-[13px] font-bold text-ink-muted uppercase tracking-widest mb-3.5">
             What's next
           </p>
           {[
@@ -77,25 +62,24 @@ function VerifiedContent() {
             { icon: '📋', text: 'Your medical history will be pre-loaded' },
             { icon: '👩‍⚕️', text: 'Your doctor receives a structured summary before you arrive' },
           ].map((step) => (
-            <div key={step.text} style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.625rem', fontSize: '0.875rem', color: 'rgba(255,255,255,0.65)' }}>
-              <span style={{ flexShrink: 0 }}>{step.icon}</span>
+            <div key={step.text} className="flex gap-3 mb-2.5 text-sm text-ink-secondary">
+              <span className="shrink-0">{step.icon}</span>
               <span>{step.text}</span>
             </div>
           ))}
         </div>
 
-        <a
+        <Link
           href="/start"
-          className="btn btn-primary"
-          style={{ display: 'inline-flex', padding: '0.875rem 2.5rem', fontSize: '1rem' }}
+          className="inline-flex items-center justify-center rounded-md font-sans font-medium transition-colors bg-accent text-dark hover:bg-accent/90 shadow-card h-11 px-10 text-base"
         >
           Go to Patient Kiosk →
-        </a>
+        </Link>
 
-        <div style={{ marginTop: '1rem' }}>
-          <a href="/" style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', textDecoration: 'none' }}>
+        <div className="mt-4">
+          <Link href="/" className="text-sm text-ink-muted hover:text-ink-secondary transition-colors no-underline">
             ← Back to MediKiosk Home
-          </a>
+          </Link>
         </div>
       </div>
     </main>
@@ -105,8 +89,8 @@ function VerifiedContent() {
 export default function VerifiedPage() {
   return (
     <Suspense fallback={
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#0F1117' }}>
-        <div style={{ width: 40, height: 40, border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#1A73E8', borderRadius: '50%', animation: 'spin 700ms linear infinite' }} />
+      <div className="flex items-center justify-center min-h-screen bg-dark">
+        <div className="w-10 h-10 border-4 border-white/10 border-t-accent rounded-full animate-spin" />
       </div>
     }>
       <VerifiedContent />

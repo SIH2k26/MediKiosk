@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { makeT } from '../../lib/i18n';
+import { Button } from '../../components/ui/button';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
@@ -140,84 +141,48 @@ export default function ScanPage() {
   };
 
   return (
-    <div style={{ height: '100vh', maxHeight: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: 'var(--color-surface, #06090E)', color: 'var(--color-text-primary, #F0F4F8)' }}>
+    <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-dark text-ink-primary">
       {/* ── Header ── */}
       <header
-        style={{
-          height: '56px',
-          padding: '0 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
-          backgroundColor: 'rgba(6, 9, 14, 0.95)',
-          backdropFilter: 'blur(16px)',
-          flexShrink: 0,
-        }}
+        className="h-14 px-6 flex items-center justify-between border-b border-dark-rule bg-dark shrink-0"
         role="banner"
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="flex items-center gap-2.5">
           <div
-            style={{
-              width: '28px',
-              height: '28px',
-              backgroundColor: 'var(--color-primary, #00C9B1)',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#06090E',
-            }}
+            className="w-7 h-7 bg-accent rounded-md flex items-center justify-center text-dark"
             aria-hidden="true"
           >
             <MediKioskLogo />
           </div>
           <div>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700 }}>MediKiosk</span>
-            <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', marginLeft: '8px' }}>AI Clinical Intake</span>
+            <span className="font-sans text-[15px] font-bold">MediKiosk</span>
+            <span className="text-[11px] text-ink-muted ml-2">AI Clinical Intake</span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ display: 'flex', gap: '4px' }} role="progressbar" aria-label="Step 4 of 5" aria-valuenow={4} aria-valuemin={1} aria-valuemax={5}>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1" role="progressbar" aria-label="Step 4 of 5" aria-valuenow={4} aria-valuemin={1} aria-valuemax={5}>
             {[1, 2, 3, 4, 5].map(step => (
               <span
                 key={step}
-                style={{
-                  width: step === 4 ? '20px' : '6px',
-                  height: '6px',
-                  borderRadius: '9999px',
-                  backgroundColor: step === 4 ? 'var(--color-primary, #00C9B1)' : step < 4 ? 'rgba(0, 201, 177, 0.4)' : 'rgba(255, 255, 255, 0.15)',
-                  transition: 'all 200ms ease',
-                }}
+                className={`h-1.5 rounded-full transition-all duration-200 ${
+                  step === 4 ? 'w-5 bg-accent' : step < 4 ? 'w-1.5 bg-accent/40' : 'w-1.5 bg-dark-ruleStrong'
+                }`}
                 aria-hidden="true"
               />
             ))}
           </div>
-          <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', fontWeight: 600 }}>4 / 5</span>
+          <span className="text-[11px] text-ink-muted font-semibold">4 / 5</span>
         </div>
       </header>
 
       {/* ── Main Viewport Content ── */}
-      <main
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          maxWidth: '740px',
-          width: '100%',
-          margin: '0 auto',
-          padding: '14px 20px 14px',
-          boxSizing: 'border-box',
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, margin: '0 0 2px 0' }}>
+      <main className="flex-1 flex flex-col justify-between max-w-[740px] w-full mx-auto px-5 py-3.5 box-border overflow-hidden">
+        <div className="text-center">
+          <h1 className="font-sans text-xl font-extrabold mb-0.5">
             {t('Upload Medical Documents (Optional)', 'मेडिकल दस्तावेज स्कैन या अपलोड करें (वैकल्पिक)')}
           </h1>
-          <p style={{ fontSize: '12.5px', color: 'rgba(240, 244, 248, 0.6)', margin: 0 }}>
+          <p className="text-[12.5px] text-ink-secondary m-0">
             {t(
               'Upload past prescriptions or lab reports. Our AI will digitize your records for the doctor.',
               'पुराने पर्चे या जांच रिपोर्ट अपलोड करें। AI इसे डॉक्टर के लिए डिजिटल बना देगा।'
@@ -226,45 +191,35 @@ export default function ScanPage() {
         </div>
 
         {cameraError && (
-          <div className="alert alert-error" style={{ margin: '8px 0' }}>
+          <div className="my-2 px-4 py-3 bg-signal-critical border border-signal-critical text-signal-critical rounded-lg text-sm flex items-center gap-2">
             ⚠️ {cameraError}
           </div>
         )}
 
         {/* Camera Capture View */}
         {isCapturingCamera && (
-          <div style={{ textAlign: 'center', backgroundColor: '#0D1219', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '14px' }}>
-            <video ref={videoRef} style={{ width: '100%', maxHeight: '200px', borderRadius: '8px', background: '#000', objectFit: 'cover' }} autoPlay playsInline />
-            <canvas ref={canvasRef} style={{ display: 'none' }} />
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '10px' }}>
-              <button className="btn btn-secondary" onClick={stopCamera} style={{ height: '36px' }}>
+          <div className="text-center bg-dark-sunken border border-dark-rule rounded-xl p-3.5">
+            <video ref={videoRef} className="w-full max-h-[200px] rounded-lg bg-black object-cover" autoPlay playsInline />
+            <canvas ref={canvasRef} className="hidden" />
+            <div className="flex justify-center gap-2.5 mt-2.5">
+              <Button variant="outline" onClick={stopCamera} className="h-9">
                 {t('Cancel', 'रद्द करें')}
-              </button>
-              <button className="btn btn-primary" onClick={capturePhoto} style={{ height: '36px' }}>
+              </Button>
+              <Button variant="default" onClick={capturePhoto} className="h-9">
                 📸 {t('Capture Photo', 'फोटो खींचें')}
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {/* Document Type Selector & Upload Buttons */}
         {!isCapturingCamera && (
-          <div
-            style={{
-              backgroundColor: 'rgba(13, 18, 25, 0.94)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '14px',
-              padding: '16px 20px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-            }}
-          >
+          <div className="bg-dark-raised border border-dark-rule rounded-[14px] p-4 flex flex-col gap-3">
             <div>
-              <label style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(240, 244, 248, 0.6)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>
+              <label className="text-[11px] font-bold text-ink-secondary uppercase tracking-wider block mb-1.5">
                 {t('Select Document Category:', 'दस्तावेज का प्रकार:')}
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
+              <div className="grid grid-cols-5 gap-1.5">
                 {[
                   { type: 'PRESCRIPTION', label: t('Prescription', 'पर्चा'), icon: '💊' },
                   { type: 'LAB_REPORT', label: t('Lab Report', 'जांच'), icon: '🧪' },
@@ -272,32 +227,32 @@ export default function ScanPage() {
                   { type: 'IMAGING_REPORT', label: t('X-Ray/Scan', 'स्कैन'), icon: '🩻' },
                   { type: 'OTHER', label: t('Other', 'अन्य'), icon: '📄' },
                 ].map((item) => (
-                  <button
+                  <Button
                     key={item.type}
                     type="button"
-                    className={`btn ${docType === item.type ? 'btn-primary' : 'btn-secondary'}`}
+                    variant={docType === item.type ? "default" : "outline"}
                     onClick={() => setDocType(item.type as any)}
-                    style={{ padding: '4px 6px', fontSize: '11px', height: '32px' }}
+                    className="px-1.5 py-1 text-[11px] h-8 flex flex-col sm:flex-row gap-1 items-center justify-center leading-tight"
                   >
-                    <span>{item.icon}</span> {item.label}
-                  </button>
+                    <span>{item.icon}</span> <span>{item.label}</span>
+                  </Button>
                 ))}
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <button className="btn btn-secondary" onClick={startCamera} style={{ height: '44px', fontSize: '13px' }}>
+            <div className="grid grid-cols-2 gap-2.5">
+              <Button variant="outline" onClick={startCamera} className="h-11 text-[13px]">
                 📸 {t('Take Camera Photo', 'कैमरे से फोटो लें')}
-              </button>
-              <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()} style={{ height: '44px', fontSize: '13px' }}>
+              </Button>
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="h-11 text-[13px]">
                 📁 {t('Upload File / PDF', 'फ़ाइल / PDF चुनें')}
-              </button>
+              </Button>
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*,application/pdf"
                 multiple
-                style={{ display: 'none' }}
+                className="hidden"
                 onChange={handleFileUpload}
               />
             </div>
@@ -306,30 +261,22 @@ export default function ScanPage() {
 
         {/* Uploaded Documents List */}
         {documents.length > 0 && (
-          <div style={{ maxHeight: '100px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div className="max-h-[100px] overflow-y-auto flex flex-col gap-1.5">
             {documents.map((doc) => (
               <div
                 key={doc.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 12px',
-                  backgroundColor: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '8px',
-                }}
+                className="flex items-center justify-between px-3 py-2 bg-dark-ruleStrong/30 border border-dark-rule rounded-lg"
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '16px' }}>📄</span>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-base">📄</span>
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: '12px' }}>{doc.name}</div>
-                    <div style={{ fontSize: '10.5px', color: 'rgba(240, 244, 248, 0.4)' }}>
+                    <div className="font-semibold text-xs text-ink-primary">{doc.name}</div>
+                    <div className="text-[10.5px] text-ink-muted">
                       {doc.type} • {doc.status === 'PROCESSING' ? t('Extracting with OCR…', 'OCR अनुवाद जारी…') : t('✅ Digitized', '✅ डिजिटल')}
                     </div>
                   </div>
                 </div>
-                <button onClick={() => removeDoc(doc.id)} style={{ color: '#FF8A80', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px' }}>
+                <button onClick={() => removeDoc(doc.id)} className="text-signal-critical bg-transparent border-none cursor-pointer text-xs hover:text-signal-critical transition-colors">
                   ✕ {t('Remove', 'हटाएं')}
                 </button>
               </div>
@@ -338,15 +285,15 @@ export default function ScanPage() {
         )}
 
         {/* Bottom Actions */}
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn btn-secondary" onClick={() => router.push('/history')} style={{ flex: 1, height: '46px' }}>
+        <div className="flex gap-2.5 mt-auto">
+          <Button variant="outline" onClick={() => router.push('/history')} className="flex-1 h-11">
             ← {t('Back', 'वापस')}
-          </button>
-          <button className="btn btn-primary" onClick={handleProceed} style={{ flex: 2, height: '46px', fontWeight: 700 }}>
+          </Button>
+          <Button variant="default" onClick={handleProceed} className="flex-[2] h-11 font-bold">
             {documents.length > 0
               ? t('Get OPD Token →', 'OPD टोकन प्राप्त करें →')
               : t('Skip & Get OPD Token →', 'छोड़ें और OPD टोकन प्राप्त करें →')}
-          </button>
+          </Button>
         </div>
       </main>
     </div>
