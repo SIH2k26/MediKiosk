@@ -69,9 +69,9 @@ function riskBadge(risk: string) {
 }
 
 function rowClass(risk: string) {
-  if (risk === 'EMERGENCY')    return 'bg-signal-critical/5 hover:bg-signal-critical/10 border-l-2 border-signal-critical';
-  if (risk === 'HIGH_PRIORITY') return 'bg-signal-warning/5 hover:bg-signal-warning/10 border-l-2 border-signal-warning';
-  return 'hover:bg-dark-raised border-l-2 border-transparent';
+  if (risk === 'EMERGENCY')    return 'bg-signal-critical/10 hover:bg-signal-critical/20 border-l-2 border-signal-critical cursor-pointer transition-colors';
+  if (risk === 'HIGH_PRIORITY') return 'bg-signal-warning/10 hover:bg-signal-warning/20 border-l-2 border-signal-warning cursor-pointer transition-colors';
+  return 'hover:bg-dark-raised border-l-2 border-transparent cursor-pointer transition-colors';
 }
 
 function MediKioskLogo() {
@@ -133,7 +133,7 @@ export default function DoctorPortalPage() {
       }
     } catch {
       // Keep seed queue fallback
-    } finally {
+    } fontinally {
       setIsLoadingQueue(false);
     }
   };
@@ -257,9 +257,9 @@ export default function DoctorPortalPage() {
   // ── Loading screen ──────────────────────────────────────────
   if (!authChecked) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: '1rem' }}>
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-dark">
         <div className="page-spinner" aria-label="Authenticating…" />
-        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>Authenticating…</p>
+        <p className="text-sm text-ink-muted">Authenticating…</p>
       </div>
     );
   }
@@ -321,14 +321,14 @@ export default function DoctorPortalPage() {
         <div className="p-4 border-t border-dark-rule flex flex-col gap-3">
           {user && (
             <div className="flex items-center gap-3 p-3 bg-dark-sunken rounded-lg border border-dark-rule">
-              <div className="w-9 h-9 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-sm border border-accent/20" aria-hidden="true">{initials}</div>
+              <div className="w-9 h-9 rounded-full bg-accent-wash text-accent flex items-center justify-center font-bold text-sm border border-accent/20" aria-hidden="true">{initials}</div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold truncate text-ink-primary">{user.fullName}</div>
                 <div className="text-xs text-ink-tertiary truncate uppercase tracking-wider font-medium">{user.role}</div>
               </div>
             </div>
           )}
-          <Button id="doctor-signout-btn" variant="ghost" className="w-full justify-start text-[#FCA5A5] hover:text-[#F87171] hover:bg-[#FCA5A5]/10 gap-2"
+          <Button id="doctor-signout-btn" variant="ghost" className="w-full justify-start text-signal-critical hover:text-signal-critical hover:bg-signal-critical/10 gap-2"
             onClick={handleSignOut}
             disabled={signingOut}
             aria-label="Sign out of doctor portal"
@@ -355,12 +355,12 @@ export default function DoctorPortalPage() {
             </p>
           </div>
           <div className="flex items-center gap-5">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-              <div className="w-2 h-2 rounded-full bg-[#10B981]" aria-hidden="true" />
+            <div className="flex items-center gap-2 text-xs text-ink-muted">
+              <div className="w-2 h-2 rounded-full bg-signal-success" aria-hidden="true" />
               Realtime
             </div>
-            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{user?.fullName}</span>
-            <div className="w-9 h-9 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-sm border border-accent/20" aria-hidden="true">{initials}</div>
+            <span className="text-xs text-ink-muted">{user?.fullName}</span>
+            <div className="w-9 h-9 rounded-full bg-accent-wash text-accent flex items-center justify-center font-bold text-sm border border-accent/20" aria-hidden="true">{initials}</div>
           </div>
         </div>
 
@@ -372,18 +372,18 @@ export default function DoctorPortalPage() {
               <div className="text-sm text-ink-secondary font-medium">In Queue</div>
               <div className="text-3xl font-semibold text-ink-primary">{totalWaiting}</div>
             </Card>
-            <Card className="p-5 flex flex-col gap-2" style={{ borderColor: emergency > 0 ? 'rgba(239,68,68,0.4)' : undefined }}>
+            <Card className={`p-5 flex flex-col gap-2 ${emergency > 0 ? 'border-signal-critical' : ''}`}>
               <div className="text-sm text-ink-secondary font-medium">🚨 Emergency</div>
-              <div className="text-3xl font-semibold text-ink-primary" style={{ color: emergency > 0 ? '#FCA5A5' : undefined }}>{emergency}</div>
+              <div className={`text-3xl font-semibold ${emergency > 0 ? 'text-signal-critical' : 'text-ink-primary'}`}>{emergency}</div>
             </Card>
-            <Card className="p-5 flex flex-col gap-2" style={{ borderColor: highPriority > 0 ? 'rgba(245,158,11,0.4)' : undefined }}>
+            <Card className={`p-5 flex flex-col gap-2 ${highPriority > 0 ? 'border-signal-warning' : ''}`}>
               <div className="text-sm text-ink-secondary font-medium">⚠ High Priority</div>
-              <div className="text-3xl font-semibold text-ink-primary" style={{ color: highPriority > 0 ? '#FCD34D' : undefined }}>{highPriority}</div>
+              <div className={`text-3xl font-semibold ${highPriority > 0 ? 'text-signal-warning' : 'text-ink-primary'}`}>{highPriority}</div>
             </Card>
             <Card className="p-5 flex flex-col gap-2">
               <div className="text-sm text-ink-secondary font-medium">System Status</div>
-              <div className="text-3xl font-semibold text-ink-primary" style={{ color: 'var(--color-primary)', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '0.25rem' }}>
-                <div className="w-2 h-2 rounded-full bg-[#10B981]" aria-hidden="true" />
+              <div className="text-xl font-semibold text-accent flex items-center gap-2 pt-1">
+                <div className="w-2 h-2 rounded-full bg-signal-success" aria-hidden="true" />
                 Active
               </div>
             </Card>
@@ -395,7 +395,10 @@ export default function DoctorPortalPage() {
               <CardTitle>Patient OPD Queue</CardTitle>
               <Button variant="ghost" onClick={fetchLiveQueue} disabled={isLoadingQueue} aria-label="Refresh queue">
                 {isLoadingQueue ? (
-                  <><div style={{ width: 14, height: 14, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />Refreshing…</>
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    Refreshing…
+                  </>
                 ) : (
                   <>
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -431,27 +434,27 @@ export default function DoctorPortalPage() {
                       <td className="px-4 py-3 border-b border-dark-rule">
                         <DataMono>{item.opdToken}</DataMono>
                       </td>
-                      <td className="px-4 py-3 border-b border-dark-rule" style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                      <td className="px-4 py-3 border-b border-dark-rule font-semibold text-ink-primary">
                         {item.patient?.first_name} {item.patient?.last_name}
                       </td>
-                      <td className="px-4 py-3 border-b border-dark-rule" style={{ color: 'var(--color-text-secondary)', fontSize: '0.825rem' }}>
+                      <td className="px-4 py-3 border-b border-dark-rule text-ink-secondary text-xs">
                         {item.patient?.age ? `${item.patient.age}y` : '—'} / {item.patient?.gender || '—'}
                       </td>
-                      <td className="px-4 py-3 border-b border-dark-rule" style={{ color: 'var(--color-text-secondary)', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.825rem' }}>
+                      <td className="px-4 py-3 border-b border-dark-rule text-ink-secondary max-w-[260px] truncate text-xs">
                         {item.chiefComplaint}
                       </td>
                       <td className="px-4 py-3 border-b border-dark-rule">{riskBadge(item.riskLevel || 'NORMAL')}</td>
-                      <td className="px-4 py-3 border-b border-dark-rule" style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                      <td className="px-4 py-3 border-b border-dark-rule text-xs text-ink-muted">
                         {item.summaryStatus === 'CONFIRMED'
-                          ? <span style={{ color: '#6EE7B7' }}>✓ Confirmed</span>
+                          ? <span className="text-signal-success font-medium">✓ Confirmed</span>
                           : item.summaryStatus
-                            ? <span className="inline-flex items-center rounded-md bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent border border-accent/20">AI Draft</span>
-                            : <span style={{ color: 'var(--color-text-hint)' }}>Pending</span>
+                            ? <span className="inline-flex items-center rounded-md bg-accent-wash px-2 py-0.5 text-xs font-semibold text-accent border border-accent/20">AI Draft</span>
+                            : <span className="text-ink-tertiary">Pending</span>
                         }
                       </td>
                       <td className="px-4 py-3 border-b border-dark-rule">
                         <Button variant="default"
-                          style={{ padding: '0.375rem 0.875rem', fontSize: '0.78rem' }}
+                          className="py-1 px-3 text-xs"
                           onClick={(e) => { e.stopPropagation(); openPatientDossier(item); }}
                           aria-label={`Open clinical view for ${item.patient?.first_name}`}
                         >
@@ -476,27 +479,23 @@ export default function DoctorPortalPage() {
           aria-modal="true"
           aria-label={`Clinical dossier for ${selectedPatient.patient?.first_name} ${selectedPatient.patient?.last_name}`}
         >
-          <div className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl bg-dark border border-dark-ruleStrong shadow-2xl overflow-hidden animate-in zoom-in-95" role="document">
+          <div className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-lg bg-dark border border-dark-ruleStrong shadow-raised overflow-hidden animate-in zoom-in-95" role="document">
             {/* Modal Header */}
             <div className="flex items-start justify-between p-6 border-b border-dark-rule bg-dark-raised">
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: '0.375rem' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 800, letterSpacing: '-0.025em' }}>
-                        {selectedPatient.patient?.first_name} {selectedPatient.patient?.last_name}
-                      </span>
-                      {riskBadge(selectedPatient.riskLevel)}
-                    </div>
-                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                      Age: {selectedPatient.patient?.age || '—'} &nbsp;·&nbsp;
-                      {selectedPatient.patient?.gender || '—'} &nbsp;·&nbsp;
-                      Token: <strong style={{ color: 'var(--color-primary)' }}>{selectedPatient.opdToken}</strong> &nbsp;·&nbsp;
-                      ABHA: {selectedPatient.patient?.abha_id || 'Not linked'} &nbsp;·&nbsp;
-                      {selectedPatient.patient?.phone || '—'}
-                    </p>
-                  </div>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl font-bold tracking-tight text-ink-primary">
+                    {selectedPatient.patient?.first_name} {selectedPatient.patient?.last_name}
+                  </span>
+                  {riskBadge(selectedPatient.riskLevel)}
                 </div>
+                <p className="text-xs text-ink-muted">
+                  Age: {selectedPatient.patient?.age || '—'} &nbsp;·&nbsp;
+                  {selectedPatient.patient?.gender || '—'} &nbsp;·&nbsp;
+                  Token: <strong className="text-accent">{selectedPatient.opdToken}</strong> &nbsp;·&nbsp;
+                  ABHA: {selectedPatient.patient?.abha_id || 'Not linked'} &nbsp;·&nbsp;
+                  {selectedPatient.patient?.phone || '—'}
+                </p>
               </div>
               <Button variant="ghost" onClick={() => setSelectedPatient(null)} aria-label="Close dossier">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -510,7 +509,7 @@ export default function DoctorPortalPage() {
             <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8 bg-dark">
               {/* Success message */}
               {reviewSuccessMsg && (
-                <div className="flex items-center gap-2 p-4 bg-[#10B981]/10 border border-[#10B981]/20 text-[#10B981] rounded-lg text-sm font-medium" role="status">
+                <div className="flex items-center gap-2 p-4 bg-signal-success/10 border border-signal-success/20 text-signal-success rounded-md text-sm font-medium" role="status">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <path d="M3 8l4 4 6-7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -520,16 +519,16 @@ export default function DoctorPortalPage() {
 
               {/* Loading dossier */}
               {isLoadingDossier ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '1rem' }}>
-                  <div style={{ width: 28, height: 28, border: '3px solid rgba(255,255,255,0.08)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>Loading clinical dossier…</span>
+                <div className="flex items-center gap-3.5 p-4">
+                  <div className="w-7 h-7 border-2 border-dark-rule border-t-accent rounded-full animate-spin" />
+                  <span className="text-sm text-ink-muted">Loading clinical dossier…</span>
                 </div>
               ) : (
                 <>
                   {/* AI Generated Banner */}
-                  <div style={{ padding: '0.75rem 1rem', background: 'rgba(0,201,177,0.06)', border: '1px solid var(--color-border-primary)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                  <div className="p-3 bg-accent-wash border border-accent/20 rounded-lg flex items-center gap-2.5">
                     <span className="inline-flex items-center rounded-md bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent border border-accent/20">AI Generated</span>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                    <span className="text-xs text-ink-muted">
                       AI-generated fields are suggestions. Review, edit, and confirm before saving.
                     </span>
                   </div>
@@ -551,17 +550,16 @@ export default function DoctorPortalPage() {
                     <label className="block text-xs font-semibold text-ink-secondary mb-2 uppercase tracking-wider" htmlFor="doc-hpi">
                       History of Present Illness (AI Narrative)
                     </label>
-                    <textarea id="doc-hpi" className="flex w-full rounded-md border border-dark-rule bg-dark-sunken px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent" 
+                    <textarea id="doc-hpi" className="flex w-full rounded-md border border-dark-rule bg-dark-sunken px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent resize-y" 
                       rows={4}
                       value={hpiEdit}
                       onChange={(e) => setHpiEdit(e.target.value)}
-                      style={{ resize: 'vertical' }}
                       placeholder="HPI narrative…"
                     />
                   </div>
 
                   {/* Past History + Medications */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-xs font-semibold text-ink-secondary mb-2 uppercase tracking-wider" htmlFor="doc-past-history">Past Medical History</label>
                       <Input id="doc-past-history" type="text" 
@@ -585,12 +583,11 @@ export default function DoctorPortalPage() {
                     <label className="block text-xs font-semibold text-ink-secondary mb-2 uppercase tracking-wider" htmlFor="doc-notes">
                       Physician Examination Notes & Prescription
                     </label>
-                    <textarea id="doc-notes" className="flex w-full rounded-md border border-dark-rule bg-dark-sunken px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent" 
+                    <textarea id="doc-notes" className="flex w-full rounded-md border border-dark-rule bg-dark-sunken px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent resize-y" 
                       rows={3}
                       placeholder="Enter examination findings, prescription, and follow-up advice…"
                       value={doctorNotes}
                       onChange={(e) => setDoctorNotes(e.target.value)}
-                      style={{ resize: 'vertical' }}
                     />
                   </div>
                 </>
@@ -600,7 +597,7 @@ export default function DoctorPortalPage() {
             {/* Modal Footer */}
             <div className="flex items-center justify-between p-6 border-t border-dark-rule bg-dark-raised">
               {/* Integration buttons */}
-              <div style={{ display: 'flex', gap: '0.625rem' }}>
+              <div className="flex gap-2.5">
                 <Button variant="outline" onClick={handlePushToAbdm} aria-label="Push record to ABDM">
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                     <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -616,9 +613,9 @@ export default function DoctorPortalPage() {
               </div>
 
               {/* Review action buttons */}
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <div className="flex gap-3">
                 <Button variant="outline"
-                  style={{ color: '#FCA5A5', borderColor: 'rgba(239,68,68,0.35)' }}
+                  className="text-signal-critical border-signal-critical/35 hover:bg-signal-critical/10"
                   onClick={() => handleReviewAction('REJECT')}
                   disabled={isSubmittingReview || isLoadingDossier}
                   aria-label="Reject AI summary"
@@ -631,7 +628,10 @@ export default function DoctorPortalPage() {
                   aria-label="Confirm and finalize clinical summary"
                 >
                   {isSubmittingReview ? (
-                    <><div style={{ width: 14, height: 14, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />Saving…</>
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      Saving…
+                    </>
                   ) : (
                     <>
                       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">

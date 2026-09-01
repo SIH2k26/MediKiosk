@@ -1,4 +1,5 @@
 'use client';
+
 import '../globals.css';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -6,24 +7,24 @@ import { getCurrentAdminUser, type AdminUser } from '../../lib/auth';
 import { supabase } from '../../lib/supabase';
 import type { TriageAlert, RiskLevel, AlertStatus, RedFlag } from '@medikiosk/shared-types';
 
-import { Button } from '../../components/ui/button';
-import { Card, CardContent } from '../../components/ui/card';
-import { SeverityBadge } from '../../components/ui/severity-badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { SeverityBadge } from '@/components/ui/severity-badge';
 
 // ─── Badge helpers ────────────────────────────────────────────────────────────
 
 const RISK_CONFIG: Record<RiskLevel, { severity: "critical" | "warning" | "default"; label: string; pulse: boolean }> = {
-  EMERGENCY:     { severity: 'critical',    label: '🚨 Emergency',    pulse: true  },
-  HIGH_PRIORITY: { severity: 'warning',label: '⚠️ High Priority', pulse: true  },
-  WARNING:       { severity: 'warning',      label: '⚡ Warning',      pulse: false },
-  NORMAL:        { severity: 'default',       label: '✅ Normal',       pulse: false },
+  EMERGENCY:     { severity: 'critical', label: '🚨 Emergency',    pulse: true  },
+  HIGH_PRIORITY: { severity: 'warning',  label: '⚠️ High Priority', pulse: true  },
+  WARNING:       { severity: 'warning',  label: '⚡ Warning',      pulse: false },
+  NORMAL:        { severity: 'default',  label: '✅ Normal',       pulse: false },
 };
 
 const STATUS_CONFIG: Record<AlertStatus, { cls: string; label: string }> = {
-  ACTIVE:        { cls: 'bg-accent text-accent border-accent', label: 'Active'       },
-  ACKNOWLEDGED:  { cls: 'bg-signal-warning text-signal-warning border-signal-warning', label: 'Acknowledged' },
-  ESCALATED:     { cls: 'bg-signal-warning text-signal-warning border-signal-warning', label: 'Escalated'    },
-  RESOLVED:      { cls: 'bg-dark-sunken text-ink-muted border-dark-rule', label: 'Resolved'     },
+  ACTIVE:        { cls: 'bg-accent-wash text-accent border-accent', label: 'Active' },
+  ACKNOWLEDGED:  { cls: 'bg-dark-sunken text-signal-warning border-dark-rule', label: 'Acknowledged' },
+  ESCALATED:     { cls: 'bg-dark-sunken text-signal-warning border-signal-warning', label: 'Escalated' },
+  RESOLVED:      { cls: 'bg-dark-sunken text-ink-muted border-dark-rule', label: 'Resolved' },
 };
 
 function timeAgo(isoString: string): string {
@@ -218,7 +219,7 @@ export default function AdminTriageDashboard() {
   return (
     <div className="min-h-screen flex flex-col bg-dark">
       {/* Top Nav */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-dark-rule">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-dark-rule bg-dark-raised">
         <div className="flex items-center gap-3">
           <div className="text-accent" aria-hidden="true">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -232,7 +233,7 @@ export default function AdminTriageDashboard() {
         <div className="flex items-center gap-4">
           {newAlertCount > 0 && (
             <button
-              className="px-3 py-1.5 rounded-full bg-signal-critical text-white text-xs font-bold animate-pulse"
+              className="px-3 py-1.5 rounded-full bg-signal-critical text-ink-primary text-xs font-bold animate-pulse"
               onClick={() => setNewAlertCount(0)}
               aria-label={`${newAlertCount} new alerts since page load`}
             >
@@ -250,7 +251,7 @@ export default function AdminTriageDashboard() {
 
       <main className="flex-1 p-8 max-w-7xl mx-auto w-full flex flex-col gap-8">
         {/* Hero */}
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div className="max-w-2xl">
             <h1 className="text-3xl font-bold text-ink-primary mb-2">Triage Alerts</h1>
             <p className="text-ink-secondary">
@@ -260,28 +261,28 @@ export default function AdminTriageDashboard() {
             </p>
           </div>
           <div className="flex gap-3">
-            <div className="flex flex-col items-center justify-center px-4 py-2 rounded-md bg-signal-critical border border-signal-critical min-w-[80px]">
+            <div className="flex flex-col items-center justify-center px-4 py-2 rounded-md bg-dark-raised border border-dark-rule shadow-card min-w-[80px]">
               <span className="text-xl font-bold text-signal-critical">{emergencyCount}</span>
-              <span className="text-xs uppercase tracking-wider text-signal-critical">Emergency</span>
+              <span className="text-xs font-medium uppercase tracking-wider text-ink-tertiary">Emergency</span>
             </div>
-            <div className="flex flex-col items-center justify-center px-4 py-2 rounded-md bg-accent border border-accent min-w-[80px]">
+            <div className="flex flex-col items-center justify-center px-4 py-2 rounded-md bg-dark-raised border border-dark-rule shadow-card min-w-[80px]">
               <span className="text-xl font-bold text-accent">{activeCount}</span>
-              <span className="text-xs uppercase tracking-wider text-accent">Active</span>
+              <span className="text-xs font-medium uppercase tracking-wider text-ink-tertiary">Active</span>
             </div>
             <div className="flex flex-col items-center justify-center px-4 py-2 rounded-md bg-dark-sunken border border-dark-rule min-w-[80px]">
               <span className="text-xl font-bold text-ink-primary">{alerts.length}</span>
-              <span className="text-xs uppercase tracking-wider text-ink-secondary">Total</span>
+              <span className="text-xs font-medium uppercase tracking-wider text-ink-secondary">Total</span>
             </div>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex items-end gap-4 p-4 rounded-lg bg-dark-sunken border border-dark-rule">
+        <div className="flex flex-wrap items-end gap-4 p-4 rounded-lg bg-dark-sunken border border-dark-rule">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary" htmlFor="filter-status">Status</label>
             <select
               id="filter-status"
-              className="h-10 px-3 py-2 rounded-md bg-dark border border-dark-rule text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent"
+              className="h-10 px-3 py-2 rounded-md bg-dark border border-dark-rule text-sm text-ink-primary focus:outline-none focus:ring-1 focus:ring-accent"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as AlertStatus | 'ALL')}
             >
@@ -296,7 +297,7 @@ export default function AdminTriageDashboard() {
             <label className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary" htmlFor="filter-risk">Risk</label>
             <select
               id="filter-risk"
-              className="h-10 px-3 py-2 rounded-md bg-dark border border-dark-rule text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent"
+              className="h-10 px-3 py-2 rounded-md bg-dark border border-dark-rule text-sm text-ink-primary focus:outline-none focus:ring-1 focus:ring-accent"
               value={filterRisk}
               onChange={(e) => setFilterRisk(e.target.value as RiskLevel | 'ALL')}
             >
@@ -309,7 +310,7 @@ export default function AdminTriageDashboard() {
           <Button
             id="triage-refresh-btn"
             variant="ghost"
-            className="ml-auto"
+            className="ml-auto text-ink-secondary hover:text-ink-primary"
             onClick={fetchAlerts}
             aria-label="Refresh alerts"
           >
@@ -321,9 +322,9 @@ export default function AdminTriageDashboard() {
         {loading ? (
           <div className="flex justify-center p-12"><div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" /></div>
         ) : filteredAlerts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center rounded-lg border border-dashed border-dark-rule">
+          <div className="flex flex-col items-center justify-center p-12 text-center rounded-lg border border-dashed border-dark-rule bg-dark-sunken">
             <span className="text-4xl mb-4">✅</span>
-            <p className="text-ink-secondary">No triage alerts match the selected filters.</p>
+            <p className="text-ink-secondary font-medium">No triage alerts match the selected filters.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -336,7 +337,7 @@ export default function AdminTriageDashboard() {
               return (
                 <Card 
                   key={alert.id}
-                  className={`overflow-hidden relative ${alert.riskLevel === 'EMERGENCY' ? 'border-l-2 border-signal-critical' : alert.riskLevel === 'HIGH_PRIORITY' ? 'border-l-2 border-signal-warning' : ''}`}
+                  className="overflow-hidden relative bg-dark-raised border-dark-rule shadow-card rounded-lg"
                 >
                   {/* Left accent bar */}
                   <div className={`absolute left-0 top-0 bottom-0 w-1 ${
@@ -382,8 +383,8 @@ export default function AdminTriageDashboard() {
 
                     {/* Suggested action — protocol-neutral */}
                     {alert.suggestedAction && (
-                      <div className="mb-4 p-3 rounded-md bg-dark border border-dark-rule">
-                        <span className="block text-xs font-bold uppercase tracking-wider text-ink-tertiary mb-1">Suggested action</span>
+                      <div className="mb-4 p-3 rounded-md bg-dark-sunken border border-dark-rule">
+                        <span className="block text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-1">Suggested action</span>
                         <span className="text-sm text-ink-primary font-medium">{alert.suggestedAction}</span>
                       </div>
                     )}
@@ -400,7 +401,7 @@ export default function AdminTriageDashboard() {
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between mt-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-6 pt-4 border-t border-dark-rule">
                       {/* Time to intervention */}
                       <div>
                         {alert.timeToInterventionMinutes && canAct && (
@@ -438,7 +439,7 @@ export default function AdminTriageDashboard() {
                               variant="destructive"
                               onClick={() => handleEscalate(alert.id)}
                               aria-label={`Escalate alert ${alert.id}`}
-                              className="bg-signal-warning text-signal-warning border border-signal-warning hover:bg-signal-warning"
+                              className="bg-dark-sunken text-signal-warning border border-signal-warning hover:bg-dark-raised"
                             >
                               ↑ Escalate
                             </Button>

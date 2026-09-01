@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInDoctor, registerDoctor, getCurrentDoctorUser } from '../../lib/auth';
-import './login.css';
 
 export default function DoctorLoginPage() {
   const router = useRouter();
@@ -95,67 +94,50 @@ export default function DoctorLoginPage() {
 
   if (checkingSession) {
     return (
-      <div className="login-screen">
-        <div className="login-spinner" aria-label="Checking session…" />
+      <div className="min-h-screen bg-dark flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" aria-label="Checking session…" />
       </div>
     );
   }
 
   return (
-    <div className="login-screen" role="main">
-      <div className="login-orb login-orb-1" aria-hidden="true" />
-      <div className="login-orb login-orb-2" aria-hidden="true" />
-
-      <div className="login-card" style={{ maxWidth: '480px', padding: '24px 28px' }}>
+    <div className="min-h-screen bg-dark text-ink-primary flex items-center justify-center p-4" role="main">
+      <div className="w-full max-w-[460px] bg-dark-raised border border-dark-rule rounded-lg shadow-card p-6">
         {/* Header Logo */}
-        <div className="login-logo" style={{ marginBottom: '16px' }}>
-          <div className="login-logo-icon" aria-hidden="true">
-            <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-              <path d="M14 3L25 9.5V18.5L14 25L3 18.5V9.5L14 3Z" stroke="white" strokeWidth="1.5" fill="none" />
-              <path d="M14 10V18M10 14H18" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-md bg-accent-wash border border-dark-rule flex items-center justify-center shrink-0" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+              <path d="M14 3L25 9.5V18.5L14 25L3 18.5V9.5L14 3Z" className="stroke-accent" strokeWidth="1.5" fill="none" />
+              <path d="M14 10V18M10 14H18" className="stroke-accent" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
           </div>
           <div>
-            <div className="login-logo-name" style={{ fontSize: '17px' }}>MediKiosk</div>
-            <div className="login-logo-sub" style={{ fontSize: '11px' }}>Doctor Clinical Cockpit</div>
+            <div className="text-base font-bold text-ink-primary tracking-tight">MediKiosk</div>
+            <div className="text-[11px] font-medium text-ink-tertiary">Doctor Clinical Cockpit</div>
           </div>
         </div>
 
         {/* Tab Toggle */}
-        <div style={{ display: 'flex', gap: '4px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '10px', padding: '3px', marginBottom: '16px' }}>
+        <div className="flex gap-1 bg-dark-sunken border border-dark-rule p-1 rounded-md mb-5">
           <button
             type="button"
             onClick={() => { setMode('LOGIN'); setError(null); }}
-            style={{
-              flex: 1,
-              height: '34px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: mode === 'LOGIN' ? '#00C9B1' : 'transparent',
-              color: mode === 'LOGIN' ? '#06090E' : 'rgba(240, 244, 248, 0.7)',
-              fontWeight: 700,
-              fontSize: '13px',
-              cursor: 'pointer',
-              transition: 'all 150ms ease',
-            }}
+            className={`flex-1 h-8 rounded text-xs font-bold transition-all ${
+              mode === 'LOGIN'
+                ? 'bg-accent text-dark shadow-sm'
+                : 'text-ink-tertiary hover:text-ink-primary bg-transparent'
+            }`}
           >
             Sign In
           </button>
           <button
             type="button"
             onClick={() => { setMode('REGISTER'); setError(null); }}
-            style={{
-              flex: 1,
-              height: '34px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: mode === 'REGISTER' ? '#00C9B1' : 'transparent',
-              color: mode === 'REGISTER' ? '#06090E' : 'rgba(240, 244, 248, 0.7)',
-              fontWeight: 700,
-              fontSize: '13px',
-              cursor: 'pointer',
-              transition: 'all 150ms ease',
-            }}
+            className={`flex-1 h-8 rounded text-xs font-bold transition-all ${
+              mode === 'REGISTER'
+                ? 'bg-accent text-dark shadow-sm'
+                : 'text-ink-tertiary hover:text-ink-primary bg-transparent'
+            }`}
           >
             Register as Doctor
           </button>
@@ -163,9 +145,9 @@ export default function DoctorLoginPage() {
 
         {/* Error message */}
         {error && (
-          <div className="login-error" role="alert" style={{ padding: '8px 12px', marginBottom: '12px', fontSize: '13px' }}>
-            <span className="login-error-icon">⚠️</span>
-            {error}
+          <div className="p-3 bg-dark-sunken border border-dark-ruleStrong text-signal-critical rounded-md text-xs mb-4 flex items-center gap-2 font-medium" role="alert">
+            <span aria-hidden="true">⚠️</span>
+            <span>{error}</span>
           </div>
         )}
 
@@ -173,100 +155,76 @@ export default function DoctorLoginPage() {
         {mode === 'LOGIN' && (
           <div>
             {/* Quick 1-Click Demo Profiles */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#00C9B1', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>
+            <div className="mb-4">
+              <div className="text-[10px] font-bold text-accent uppercase tracking-wider mb-2">
                 ⚡ Quick Demo Access (1-Click)
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div className="flex flex-col gap-2">
                 <button
                   type="button"
                   onClick={() => handleQuickDemoLogin('dr.sharma@hospital.org')}
                   disabled={isLoading}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 12px',
-                    backgroundColor: 'rgba(0, 201, 177, 0.08)',
-                    border: '1px solid rgba(0, 201, 177, 0.25)',
-                    borderRadius: '8px',
-                    color: '#F0F4F8',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
+                  className="w-full flex items-center justify-between p-2.5 bg-dark-sunken border border-dark-rule hover:border-accent/40 rounded-md text-left transition-all group disabled:opacity-50"
                 >
                   <div>
-                    <div style={{ fontSize: '13px', fontWeight: 700 }}>👨‍⚕️ Dr. Rajesh Sharma, MD</div>
-                    <div style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.6)' }}>Internal Medicine & Cardiology · OPD Room 4</div>
+                    <div className="text-xs font-bold text-ink-primary">👨‍⚕️ Dr. Rajesh Sharma, MD</div>
+                    <div className="text-[11px] text-ink-tertiary">Internal Medicine & Cardiology · OPD Room 4</div>
                   </div>
-                  <span style={{ fontSize: '12px', color: '#00C9B1', fontWeight: 700 }}>Enter →</span>
+                  <span className="text-xs font-bold text-accent group-hover:translate-x-0.5 transition-transform">Enter →</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleQuickDemoLogin('dr.priya@hospital.org')}
                   disabled={isLoading}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 12px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    borderRadius: '8px',
-                    color: '#F0F4F8',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
+                  className="w-full flex items-center justify-between p-2.5 bg-dark-sunken border border-dark-rule hover:border-accent/40 rounded-md text-left transition-all group disabled:opacity-50"
                 >
                   <div>
-                    <div style={{ fontSize: '13px', fontWeight: 700 }}>👩‍⚕️ Dr. Priya Nair, MS</div>
-                    <div style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.6)' }}>Emergency & Triage Specialist · Cockpit 1</div>
+                    <div className="text-xs font-bold text-ink-primary">👩‍⚕️ Dr. Priya Nair, MS</div>
+                    <div className="text-[11px] text-ink-tertiary">Emergency & Triage Specialist · Cockpit 1</div>
                   </div>
-                  <span style={{ fontSize: '12px', color: '#00C9B1', fontWeight: 700 }}>Enter →</span>
+                  <span className="text-xs font-bold text-accent group-hover:translate-x-0.5 transition-transform">Enter →</span>
                 </button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '14px 0' }}>
-              <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(255,255,255,0.08)' }} />
-              <span style={{ fontSize: '11px', color: 'rgba(240,244,248,0.4)', textTransform: 'uppercase' }}>Or Custom Sign-In</span>
-              <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(255,255,255,0.08)' }} />
+            <div className="flex items-center gap-2 my-4">
+              <div className="flex-1 h-px bg-dark-rule" />
+              <span className="text-[10px] font-semibold text-ink-tertiary uppercase tracking-wider">Or Custom Sign-In</span>
+              <div className="flex-1 h-px bg-dark-rule" />
             </div>
 
-            <form onSubmit={handleLogin} noValidate>
-              <div className="login-field" style={{ marginBottom: '10px' }}>
-                <label htmlFor="doctor-email" className="login-label">Doctor Email</label>
+            <form onSubmit={handleLogin} noValidate className="space-y-3">
+              <div>
+                <label htmlFor="doctor-email" className="block text-xs font-medium text-ink-secondary mb-1">Doctor Email</label>
                 <input
                   id="doctor-email"
                   type="email"
-                  className="login-input"
+                  className="w-full h-9 px-3 bg-dark-sunken border border-dark-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                   placeholder="doctor@hospital.org"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
-                  style={{ height: '38px', fontSize: '13.5px' }}
                   required
                 />
               </div>
 
-              <div className="login-field" style={{ marginBottom: '14px' }}>
-                <label htmlFor="doctor-password" className="login-label">Password</label>
-                <div className="login-input-group">
+              <div>
+                <label htmlFor="doctor-password" className="block text-xs font-medium text-ink-secondary mb-1">Password</label>
+                <div className="relative">
                   <input
                     id="doctor-password"
                     type={showPassword ? 'text' : 'password'}
-                    className="login-input login-input-pw"
+                    className="w-full h-9 pl-3 pr-8 bg-dark-sunken border border-dark-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoading}
-                    style={{ height: '38px', fontSize: '13.5px' }}
                     required
                   />
                   <button
                     type="button"
-                    className="login-pw-toggle"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-ink-tertiary hover:text-ink-primary"
                     onClick={() => setShowPassword((v) => !v)}
                     tabIndex={-1}
                   >
@@ -277,9 +235,8 @@ export default function DoctorLoginPage() {
 
               <button
                 type="submit"
-                className="login-btn"
                 disabled={isLoading}
-                style={{ height: '42px', backgroundColor: '#00C9B1', color: '#06090E', fontWeight: 700 }}
+                className="w-full h-10 mt-2 bg-accent hover:bg-accent/90 text-dark font-bold text-xs rounded-md transition-colors disabled:opacity-50"
               >
                 {isLoading ? 'Signing in…' : 'Sign In to OPD Queue →'}
               </button>
@@ -289,81 +246,75 @@ export default function DoctorLoginPage() {
 
         {/* ── 2. REGISTER AS DOCTOR FORM ── */}
         {mode === 'REGISTER' && (
-          <form onSubmit={handleRegister} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div className="login-field" style={{ marginBottom: 0 }}>
-              <label className="login-label">Doctor Full Name *</label>
+          <form onSubmit={handleRegister} noValidate className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-ink-secondary mb-1">Doctor Full Name *</label>
               <input
                 type="text"
-                className="login-input"
+                className="w-full h-9 px-3 bg-dark-sunken border border-dark-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                 placeholder="e.g. Dr. Rajesh Sharma, MD"
                 value={regFullName}
                 onChange={(e) => setRegFullName(e.target.value)}
                 disabled={isLoading}
-                style={{ height: '38px', fontSize: '13.5px' }}
                 required
               />
             </div>
 
-            <div className="login-field" style={{ marginBottom: 0 }}>
-              <label className="login-label">Hospital Email Address *</label>
+            <div>
+              <label className="block text-xs font-medium text-ink-secondary mb-1">Hospital Email Address *</label>
               <input
                 type="email"
-                className="login-input"
+                className="w-full h-9 px-3 bg-dark-sunken border border-dark-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                 placeholder="doctor@hospital.org"
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
                 disabled={isLoading}
-                style={{ height: '38px', fontSize: '13.5px' }}
                 required
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <div className="login-field" style={{ marginBottom: 0 }}>
-                <label className="login-label">Specialty / Dept</label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-medium text-ink-secondary mb-1">Specialty / Dept</label>
                 <input
                   type="text"
-                  className="login-input"
+                  className="w-full h-9 px-3 bg-dark-sunken border border-dark-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                   placeholder="e.g. Cardiology"
                   value={regSpecialty}
                   onChange={(e) => setRegSpecialty(e.target.value)}
                   disabled={isLoading}
-                  style={{ height: '38px', fontSize: '13.5px' }}
                 />
               </div>
 
-              <div className="login-field" style={{ marginBottom: 0 }}>
-                <label className="login-label">OPD Room No.</label>
+              <div>
+                <label className="block text-xs font-medium text-ink-secondary mb-1">OPD Room No.</label>
                 <input
                   type="text"
-                  className="login-input"
+                  className="w-full h-9 px-3 bg-dark-sunken border border-dark-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                   placeholder="e.g. Room 4"
                   value={regOpdRoom}
                   onChange={(e) => setRegOpdRoom(e.target.value)}
                   disabled={isLoading}
-                  style={{ height: '38px', fontSize: '13.5px' }}
                 />
               </div>
             </div>
 
-            <div className="login-field" style={{ marginBottom: 0 }}>
-              <label className="login-label">Password</label>
+            <div>
+              <label className="block text-xs font-medium text-ink-secondary mb-1">Password</label>
               <input
                 type="password"
-                className="login-input"
+                className="w-full h-9 px-3 bg-dark-sunken border border-dark-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                 placeholder="Create password"
                 value={regPassword}
                 onChange={(e) => setRegPassword(e.target.value)}
                 disabled={isLoading}
-                style={{ height: '38px', fontSize: '13.5px' }}
               />
             </div>
 
             <button
               type="submit"
-              className="login-btn"
               disabled={isLoading}
-              style={{ height: '42px', marginTop: '6px', backgroundColor: '#00C9B1', color: '#06090E', fontWeight: 700 }}
+              className="w-full h-10 mt-2 bg-accent hover:bg-accent/90 text-dark font-bold text-xs rounded-md transition-colors disabled:opacity-50"
             >
               {isLoading ? 'Creating account…' : 'Register & Enter Portal →'}
             </button>
@@ -371,7 +322,10 @@ export default function DoctorLoginPage() {
         )}
 
         {/* Back link */}
-        <a href="http://localhost:3000" className="login-back-link" style={{ marginTop: '14px' }}>
+        <a
+          href="http://localhost:3000"
+          className="block text-center text-xs font-medium text-ink-tertiary hover:text-accent transition-colors mt-4"
+        >
           ← Back to MediKiosk Home
         </a>
       </div>

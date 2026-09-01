@@ -10,8 +10,8 @@ export default function QueueRedirectPage() {
   }, [router]);
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', color: '#F0F4F8' }}>
-      <div style={{ fontSize: '14px', color: 'rgba(240, 244, 248, 0.5)' }}>Loading Patient Queue…</div>
+    <div className="flex min-h-screen items-center justify-center bg-bg-dark text-ink-primary">
+      <div className="text-sm text-ink-muted">Loading Patient Queue…</div>
     </div>
   );
 }

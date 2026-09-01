@@ -1,4 +1,4 @@
-﻿import * as React from "react"
+import * as React from "react"
 import { cn } from "./button"
 
 function DataMono({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) {

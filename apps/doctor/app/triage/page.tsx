@@ -1,13 +1,11 @@
 'use client';
 
-import '../globals.css';
 import Link from 'next/link';
-import { Button } from '../../components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
-import { Input } from '../../components/ui/input';
-import { SeverityBadge } from '../../components/ui/severity-badge';
-import { DataMono } from '../../components/ui/data-mono';
-import { NavItem } from '../../components/ui/nav-item';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { SeverityBadge } from '@/components/ui/severity-badge';
+import { DataMono } from '@/components/ui/data-mono';
+import { NavItem } from '@/components/ui/nav-item';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentDoctorUser, signOutDoctor, type DoctorUser } from '../../lib/auth';
@@ -77,11 +75,11 @@ const SEED_TRIAGE_ALERTS: TriageAlert[] = [
   },
 ];
 
-const RISK_CONFIG: Record<RiskLevel, { label: string; color: string; bgColor: string; borderColor: string; pulse: boolean }> = {
-  EMERGENCY:     { label: '🚨 Emergency',    color: '#FF6B6B', bgColor: 'rgba(217,48,37,0.1)',   borderColor: 'rgba(217,48,37,0.4)',  pulse: true  },
-  HIGH_PRIORITY: { label: '⚠️ High Priority', color: '#FFA552', bgColor: 'rgba(250,123,23,0.08)',  borderColor: 'rgba(250,123,23,0.3)',  pulse: true  },
-  WARNING:       { label: '⚡ Warning',       color: '#FFD54F', bgColor: 'rgba(255,213,79,0.08)',  borderColor: 'rgba(255,213,79,0.25)', pulse: false },
-  NORMAL:        { label: '✅ Normal',        color: '#69F0AE', bgColor: 'rgba(105,240,174,0.06)', borderColor: 'rgba(105,240,174,0.2)', pulse: false },
+const RISK_CONFIG: Record<RiskLevel, { label: string; borderClass: string; bgClass: string; pulse: boolean }> = {
+  EMERGENCY:     { label: '🚨 Emergency',    borderClass: 'border-signal-critical', bgClass: 'bg-signal-critical/10', pulse: true  },
+  HIGH_PRIORITY: { label: '⚠️ High Priority', borderClass: 'border-signal-warning',  bgClass: 'bg-signal-warning/10',  pulse: true  },
+  WARNING:       { label: '⚡ Warning',       borderClass: 'border-signal-warning/50', bgClass: 'bg-signal-warning/5', pulse: false },
+  NORMAL:        { label: '✅ Normal',        borderClass: 'border-dark-rule', bgClass: 'bg-dark-raised', pulse: false },
 };
 
 function timeAgo(isoString: string): string {
@@ -154,7 +152,7 @@ export default function DoctorTriagePage() {
       }
     } catch {
       // Keep seed alerts fallback
-    } finally {
+    } fontally {
       setLoading(false);
     }
   }, []);
@@ -197,7 +195,7 @@ export default function DoctorTriagePage() {
 
   if (!authChecked) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#06090E', color: '#F0F4F8' }}>
+      <div className="flex items-center justify-center min-h-screen bg-dark text-ink-primary">
         <p>Authenticating…</p>
       </div>
     );
@@ -219,45 +217,52 @@ export default function DoctorTriagePage() {
 
         <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1">
           <div className="text-xs font-semibold uppercase tracking-wider text-ink-muted mt-5 mb-2 px-3">OPD</div>
-          <Link href="/" passHref legacyBehavior><NavItem><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M2 6h12M2 10h12M6 2v12M10 2v12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-            </svg>
-            Patient Queue</NavItem></Link>
-          <Link href="/triage" passHref legacyBehavior><NavItem active aria-current="page"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M8 2L14 9H2L8 2Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-              <path d="M8 6v3M8 11h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            Real-time Triage
-            {activeAlerts.length > 0 && (
-              <span style={{
-                marginLeft: 'auto',
-                background: 'rgba(239, 68, 68, 0.2)',
-                border: '1px solid rgba(239, 68, 68, 0.4)',
-                borderRadius: '9999px',
-                fontSize: '11px',
-                fontWeight: 700,
-                padding: '1px 7px',
-                color: '#EF4444',
-              }}>
-                {activeAlerts.length}
-              </span>
-            )}</NavItem></Link>
-          <Link href="/history" passHref legacyBehavior><NavItem><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M8 3v5l3 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-              <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2" />
-            </svg>
-            Past Encounters</NavItem></Link>
+          <Link href="/" passHref legacyBehavior>
+            <NavItem>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M2 6h12M2 10h12M6 2v12M10 2v12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              </svg>
+              Patient Queue
+            </NavItem>
+          </Link>
+          <Link href="/triage" passHref legacyBehavior>
+            <NavItem active aria-current="page">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M8 2L14 9H2L8 2Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+                <path d="M8 6v3M8 11h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              Real-time Triage
+              {activeAlerts.length > 0 && (
+                <span className="ml-auto bg-signal-critical/10 border border-signal-critical/30 rounded-full text-[11px] font-bold px-2 py-0.5 text-signal-critical">
+                  {activeAlerts.length}
+                </span>
+              )}
+            </NavItem>
+          </Link>
+          <Link href="/history" passHref legacyBehavior>
+            <NavItem>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M8 3v5l3 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2" />
+              </svg>
+              Past Encounters
+            </NavItem>
+          </Link>
 
           <div className="text-xs font-semibold uppercase tracking-wider text-ink-muted mt-5 mb-2 px-3">Portals</div>
-          <NavItem href="http://localhost:3000" target="_blank" rel="noopener noreferrer"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <NavItem href="http://localhost:3000" target="_blank" rel="noopener noreferrer">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
               <path d="M5 13v2M11 13v2M3 15h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
             </svg>
-            Patient Kiosk</NavItem>
-          <NavItem href="http://localhost:3002" target="_blank" rel="noopener noreferrer"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            Patient Kiosk
+          </NavItem>
+          <NavItem href="http://localhost:3002" target="_blank" rel="noopener noreferrer">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M8 1L14 4.5V11.5L8 15L2 11.5V4.5L8 1Z" stroke="currentColor" strokeWidth="1.2" fill="none" />
             </svg>
-            Admin Console</NavItem>
+            Admin Console
+          </NavItem>
         </nav>
 
         <div className="p-4 border-t border-dark-rule flex flex-col gap-3">
@@ -270,7 +275,7 @@ export default function DoctorTriagePage() {
               </div>
             </div>
           )}
-          <Button variant="ghost" className="w-full justify-start text-[#FCA5A5] hover:text-[#F87171] hover:bg-[#FCA5A5]/10 gap-2" onClick={handleSignOut}>
+          <Button variant="ghost" className="w-full justify-start text-signal-critical hover:text-signal-critical hover:bg-signal-critical/10 gap-2" onClick={handleSignOut}>
             Sign Out
           </Button>
         </div>
@@ -284,8 +289,8 @@ export default function DoctorTriagePage() {
             <p className="text-sm text-ink-secondary mt-1">AST Rule Engine signals & red flags detected during live patient kiosk intakes.</p>
           </div>
           <div className="flex items-center gap-5">
-            <span style={{ fontSize: '12px', color: '#10B981', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
-              <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+            <span className="text-xs text-accent flex items-center gap-1.5 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-accent" />
               AST Engine Live
             </span>
           </div>
@@ -293,70 +298,64 @@ export default function DoctorTriagePage() {
 
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem 0' }}>
+            <div className="flex justify-center py-16">
               <div className="page-spinner" />
             </div>
           ) : (
             <>
               {/* Active Alerts */}
               {activeAlerts.length > 0 && (
-                <div style={{ marginBottom: '24px' }}>
-                  <h2 style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(240, 244, 248, 0.5)', marginBottom: '12px' }}>
+                <div className="mb-6">
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-ink-tertiary mb-3">
                     Active Priority Signals ({activeAlerts.length})
                   </h2>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div className="flex flex-col gap-3">
                     {activeAlerts.map((alert) => {
                       const risk = RISK_CONFIG[alert.riskLevel] ?? RISK_CONFIG.NORMAL;
                       return (
                         <div
                           key={alert.id}
-                          className="animate-in fade-in slide-in-from-bottom-2 border rounded-lg shadow-card"
-                          style={{
-                            borderColor: risk.borderColor,
-                            background: risk.bgColor,
-                            display: 'flex',
-                            gap: '16px',
-                            alignItems: 'flex-start',
-                            padding: '16px 20px',
-                          }}
+                          className={`animate-in fade-in slide-in-from-bottom-2 border rounded-lg shadow-card flex gap-4 items-start p-5 ${risk.borderClass} ${risk.bgClass}`}
                         >
-                          <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <div className="flex-1">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex gap-2 items-center">
                                 <SeverityBadge severity={alert.riskLevel === 'EMERGENCY' ? 'critical' : alert.riskLevel === 'HIGH_PRIORITY' || alert.riskLevel === 'WARNING' ? 'warning' : 'default'}>
                                   {risk.label}
                                 </SeverityBadge>
                                 {alert.clinicalCategory && (
-                                  <span style={{ fontSize: '11px', textTransform: 'uppercase', padding: '2px 8px', background: 'rgba(255,255,255,0.06)', borderRadius: '9999px', color: 'rgba(240,244,248,0.7)', fontWeight: 600 }}>
+                                  <span className="text-[11px] uppercase px-2 py-0.5 bg-dark-sunken rounded-full text-ink-secondary font-semibold border border-dark-rule">
                                     {alert.clinicalCategory}
                                   </span>
                                 )}
-                                <span style={{ fontSize: '11px', color: '#F59E0B', fontWeight: 700 }}>
+                                <span className="text-[11px] text-signal-warning font-bold">
                                   SCORE: {alert.priorityScore}
                                 </span>
                               </div>
-                              <span style={{ fontSize: '12px', color: 'rgba(240, 244, 248, 0.4)' }}>
+                              <span className="text-xs text-ink-muted">
                                 {timeAgo(alert.createdAt)}
                               </span>
                             </div>
 
-                            <p style={{ fontSize: '14px', fontWeight: 600, color: '#F0F4F8', margin: '0 0 6px 0' }}>
+                            <p className="text-sm font-semibold text-ink-primary mb-1.5">
                               {alert.suggestedAction || 'Priority signal flagged during intake'}
                             </p>
-                            <p style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', margin: 0, fontFamily: 'var(--font-mono)' }}>
+                            <DataMono className="text-xs text-ink-tertiary">
                               SESSION: {alert.sessionId} {alert.patient ? `· ${alert.patient.firstName} ${alert.patient.lastName} (${alert.patient.age}y ${alert.patient.gender})` : ''}
-                            </p>
+                            </DataMono>
                           </div>
 
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0 }}>
-                            <Button variant="default"
-                              style={{ height: '32px', padding: '0 12px', fontSize: '12px' }}
+                          <div className="flex flex-col gap-1.5 flex-shrink-0">
+                            <Button
+                              variant="default"
+                              className="h-8 px-3 text-xs"
                               onClick={() => handleAcknowledge(alert.id)}
                             >
                               ✓ Acknowledge
                             </Button>
-                            <Button variant="outline"
-                              style={{ height: '32px', padding: '0 12px', fontSize: '12px', color: '#FCA5A5', borderColor: 'rgba(239,68,68,0.3)' }}
+                            <Button
+                              variant="outline"
+                              className="h-8 px-3 text-xs text-signal-critical border-signal-critical/30 hover:bg-signal-critical/10"
                               onClick={() => handleEscalate(alert.id)}
                             >
                               ⚡ Escalate
@@ -372,33 +371,29 @@ export default function DoctorTriagePage() {
               {/* Handled / History Alerts */}
               {otherAlerts.length > 0 && (
                 <div>
-                  <h2 style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(240, 244, 248, 0.5)', marginBottom: '12px' }}>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-ink-tertiary mb-3">
                     Acknowledged & Escalated Signals ({otherAlerts.length})
                   </h2>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div className="flex flex-col gap-2.5">
                     {otherAlerts.map((alert) => (
-                      <Card key={alert.id}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '12px 18px',
-                          opacity: 0.8,
-                        }}
+                      <Card
+                        key={alert.id}
+                        className="flex justify-between items-center px-4 py-3 opacity-80 bg-dark-raised border-dark-rule shadow-card"
                       >
                         <div>
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '12px', fontWeight: 700, color: alert.alertStatus === 'ESCALATED' ? '#EF4444' : '#10B981' }}>
+                          <div className="flex gap-2 items-center mb-1">
+                            <span className={`text-xs font-bold ${alert.alertStatus === 'ESCALATED' ? 'text-signal-critical' : 'text-accent'}`}>
                               ● {alert.alertStatus}
                             </span>
-                            <span style={{ fontSize: '13px', fontWeight: 600 }}>{alert.suggestedAction}</span>
+                            <span className="text-sm font-semibold text-ink-primary">{alert.suggestedAction}</span>
                           </div>
-                          <div style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)' }}>
+                          <div className="text-[11px] text-ink-tertiary">
                             {alert.clinicalCategory} · {timeAgo(alert.createdAt)}
                           </div>
                         </div>
-                        <Button variant="outline"
-                          style={{ height: '28px', padding: '0 10px', fontSize: '11px' }}
+                        <Button
+                          variant="outline"
+                          className="h-7 px-2.5 text-[11px]"
                           onClick={() => handleResolve(alert.id)}
                         >
                           Mark Resolved
