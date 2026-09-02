@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { api } from '../../lib/api-client';
 import { Button } from '../../components/ui/button';
@@ -103,7 +104,6 @@ export default function IdentifyPage() {
     }
   };
 
-  // ─── FLOW 1: Phone + OTP ───────────────────────────────────────────────────
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clear();
@@ -132,13 +132,6 @@ export default function IdentifyPage() {
     setIsLoading(true);
     clear();
     try {
-      const patientPayload = {
-        firstName: t('Walk-in', 'आगंतुक'),
-        lastName: t('Patient', 'रोगी'),
-        phone: phoneNumber,
-        preferredLanguage: language as any,
-        isAnonymous: false,
-      };
       setIntakeMode('REGISTER');
       setIsLoading(false);
     } catch (err: any) {
@@ -168,7 +161,6 @@ export default function IdentifyPage() {
     }
   };
 
-  // ─── FLOW 2: ABHA (Ayushman Bharat Health Account) ──────────────────────────
   const handleAbhaSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleaned = abhaId.replace(/[\s-]/g, '');
@@ -187,7 +179,6 @@ export default function IdentifyPage() {
     }
   };
 
-  // ─── FLOW 3: Login with Email & Password ────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     clear();
@@ -219,7 +210,6 @@ export default function IdentifyPage() {
     }
   };
 
-  // ─── FLOW 4: New Patient Registration / Demographic Confirmation ────────────
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     clear();
@@ -231,11 +221,6 @@ export default function IdentifyPage() {
     const ageNum = parseInt(age, 10);
     if (isNaN(ageNum) || ageNum < 0 || ageNum > 125) {
       setErrorMsg(t('Please enter a valid age.', 'कृपया सही उम्र दर्ज करें।'));
-      return;
-    }
-
-    if (password && password !== confirmPw) {
-      setErrorMsg(t('Passwords do not match.', 'पासवर्ड मेल नहीं खाते।'));
       return;
     }
 
@@ -269,12 +254,10 @@ export default function IdentifyPage() {
     }
   };
 
-  // ─── FLOW 5: Quick Walk-in ──────────────────────────────────────────────────
   const handleAnonymous = async () => {
     setIsLoading(true);
     clear();
     try {
-      // Send user to quick demographic confirmation or directly to intake
       setIntakeMode('REGISTER');
       setFirstName(t('Walk-in', 'आगंतुक'));
       setLastName(t('Patient', 'रोगी'));
@@ -287,7 +270,6 @@ export default function IdentifyPage() {
     }
   };
 
-  // ─── FLOW 6: Forgot Password ────────────────────────────────────────────────
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     clear();
@@ -315,374 +297,390 @@ export default function IdentifyPage() {
     setIntakeMode('CHOOSE');
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.4, staggerChildren: 0.1 } },
+    exit: { opacity: 0, y: -20, transition: { duration: 0.3 } }
+  };
+
   const Header = () => (
-    <header className="h-14 px-6 flex items-center justify-between border-b border-dark-rule bg-dark shrink-0" role="banner">
-      <div className="flex items-center gap-2.5">
-        <div className="w-7 h-7 bg-accent rounded-md flex items-center justify-center text-dark" aria-hidden="true">
-          <MediKioskCrossIcon size={16} />
+    <header className="h-16 px-8 flex items-center justify-between border-b border-rule bg-paper shrink-0" role="banner">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-accent rounded flex items-center justify-center text-ink-primary" aria-hidden="true">
+          <MediKioskCrossIcon size={18} />
         </div>
-        <div>
-          <span className="font-sans text-[15px] font-bold">MediKiosk</span>
-          <span className="text-[11px] text-ink-muted ml-2">AI Clinical Intake</span>
+        <div className="flex items-baseline gap-2">
+          <span className="font-sans text-[17px] font-bold text-ink-primary">MediKiosk</span>
+          <span className="font-mono text-[12px] uppercase tracking-wide text-ink-tertiary">Clinical Intake</span>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <div className="flex gap-1" role="progressbar" aria-label="Step 2 of 5" aria-valuenow={2} aria-valuemin={1} aria-valuemax={5}>
+      <div className="flex items-center gap-3">
+        <div className="flex gap-1.5" role="progressbar" aria-label="Step 2 of 5" aria-valuenow={2} aria-valuemin={1} aria-valuemax={5}>
           {[1, 2, 3, 4, 5].map((s) => (
             <span
               key={s}
-              className={`h-1.5 rounded-full transition-all duration-200 ${
-                s === 2 ? 'w-5 bg-accent' : s < 2 ? 'w-1.5 bg-accent/40' : 'w-1.5 bg-dark-ruleStrong'
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                s === 2 ? 'w-8 bg-accent' : s < 2 ? 'w-2 bg-accent/40' : 'w-2 bg-paper-raised'
               }`}
               aria-hidden="true"
             />
           ))}
         </div>
-        <span className="text-[11px] text-ink-muted font-semibold">2 / 5</span>
+        <span className="font-mono text-[12px] tracking-wide text-ink-tertiary">2 / 5</span>
       </div>
     </header>
   );
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-dark text-ink-primary">
+    <div className="flex flex-col h-screen overflow-hidden bg-paper text-ink-primary">
       <Header />
-      <main className="flex-1 overflow-y-auto px-5 py-6">
-        <div className="max-w-[820px] w-full mx-auto flex flex-col gap-4">
-          {errorMsg && (
-            <div className="px-4 py-3 bg-signal-critical border border-signal-critical text-signal-critical rounded-lg text-sm flex items-center gap-2" role="alert" aria-live="assertive">
-              <span aria-hidden="true">⚠️</span> {errorMsg}
-            </div>
-          )}
-          {successMsg && (
-            <div className="px-4 py-3 bg-accent border border-accent text-accent rounded-lg text-sm flex items-center gap-2" role="status">
-              <span aria-hidden="true">✓</span> {successMsg}
-            </div>
-          )}
+      <main className="flex-1 overflow-y-auto px-6 py-10 flex flex-col items-center">
+        <div className="max-w-[1000px] w-full flex flex-col gap-6">
+          <AnimatePresence mode="wait">
+            {errorMsg && (
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="px-5 py-4 bg-signal-critical/10 border border-signal-critical text-signal-critical rounded-lg text-sm flex items-center gap-3 font-medium" role="alert">
+                <span aria-hidden="true" className="text-lg">⚠️</span> {errorMsg}
+              </motion.div>
+            )}
+            {successMsg && (
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="px-5 py-4 bg-accent/10 border border-accent text-accent rounded-lg text-sm flex items-center gap-3 font-medium" role="status">
+                <span aria-hidden="true" className="text-lg">✓</span> {successMsg}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {/* ── 1. CHOOSE INTAKE METHOD ────────────────────────────────────────── */}
-          {intakeMode === 'CHOOSE' && (
-            <div className="text-center mt-4">
-              <div className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <p className="text-[11px] font-bold text-accent uppercase tracking-widest mb-1">
-                  PATIENT CHECK-IN
-                </p>
-                <h1 className="font-sans text-[clamp(24px,3vh,32px)] font-extrabold mb-1 tracking-tight">
-                  {t('How would you like to check in?', 'आप किस तरह चेक-इन करना चाहते हैं?')}
-                </h1>
-                <p className="text-[13px] text-ink-secondary m-0">
-                  {t('Choose an identification method to begin your consultation.', 'परामर्श शुरू करने के लिए कोई एक विकल्प चुनें।')}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
-                {/* Phone + OTP */}
-                <button 
-                  className="flex flex-col items-center justify-center p-5 bg-dark-raised border border-accent hover:border-accent rounded-xl transition-all shadow-card group text-center" 
-                  onClick={() => { clear(); setIntakeMode('PHONE'); }}
-                >
-                  <span className="text-3xl mb-3">📱</span>
-                  <span className="font-sans font-bold text-ink-primary mb-1">{t('Mobile & OTP', 'मोबाइल और ओटीपी')}</span>
-                  <span className="text-xs text-ink-secondary mb-3">{t('Fast check-in via SMS code', 'एसएमएस कोड द्वारा त्वरित प्रवेश')}</span>
-                  <span className="text-[10px] uppercase tracking-wider font-bold bg-accent/20 text-accent px-2 py-1 rounded-md">{t('Popular', 'लोकप्रिय')}</span>
-                </button>
-
-                {/* ABHA Number */}
-                <button 
-                  className="flex flex-col items-center justify-center p-5 bg-dark-raised border border-dark-rule hover:border-dark-ruleStrong rounded-xl transition-all shadow-card group text-center" 
-                  onClick={() => { clear(); setIntakeMode('ABHA'); }}
-                >
-                  <span className="text-3xl mb-3">🆔</span>
-                  <span className="font-sans font-bold text-ink-primary mb-1">{t('ABHA Health ID', 'ABHA हेल्थ आईडी')}</span>
-                  <span className="text-xs text-ink-secondary">{t('14-digit Ayushman Bharat ID', '14-अंकीय आयुष्मान भारत खाता')}</span>
-                </button>
-
-                {/* Account Login */}
-                <button 
-                  className="flex flex-col items-center justify-center p-5 bg-dark-raised border border-dark-rule hover:border-dark-ruleStrong rounded-xl transition-all shadow-card group text-center" 
-                  onClick={() => { clear(); setIntakeMode('LOGIN'); }}
-                >
-                  <span className="text-3xl mb-3">🔐</span>
-                  <span className="font-sans font-bold text-ink-primary mb-1">{t('Registered Account', 'पंजीकृत खाता')}</span>
-                  <span className="text-xs text-ink-secondary">{t('Sign in with email & password', 'ईमेल और पासवर्ड से लॉगिन करें')}</span>
-                </button>
-
-                {/* Quick Walk-in */}
-                <button 
-                  className="flex flex-col items-center justify-center p-5 bg-dark-raised border border-dark-rule hover:border-dark-ruleStrong rounded-xl transition-all shadow-card group text-center disabled:opacity-50" 
-                  onClick={handleAnonymous} disabled={isLoading}
-                >
-                  <span className="text-3xl mb-3">🚶</span>
-                  <span className="font-sans font-bold text-ink-primary mb-1">{t('Quick Walk-in', 'त्वरित आगंतुक')}</span>
-                  <span className="text-xs text-ink-secondary">{t('Continue without registration', 'बिना पंजीकरण सीधे प्रवेश करें')}</span>
-                </button>
-              </div>
-
-              <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                <Link href="/start" className="text-xs text-ink-muted hover:text-ink-secondary transition-colors no-underline">
-                  ← {t('Go back / Change language', 'वापस जाएं / भाषा बदलें')}
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {/* ── 2. PHONE NUMBER INPUT ────────────────────────────────────────────── */}
-          {intakeMode === 'PHONE' && (
-            <Card className="w-full max-w-[440px] mx-auto animate-in fade-in zoom-in-95 duration-300">
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-xl">{t('Enter Mobile Number', 'मोबाइल नंबर दर्ज करें')}</CardTitle>
-                <p className="text-sm text-ink-secondary mt-1">{t('We will send a 6-digit verification code.', 'हम ६ अंकों का सत्यापन कोड भेजेंगे।')}</p>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handlePhoneSubmit} className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-ink-secondary uppercase tracking-wider">{t('10-Digit Mobile Number', '१० अंकों का मोबाइल नंबर')}</label>
-                    <Input
-                      type="tel"
-                      placeholder="9876543210"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      disabled={isLoading}
-                      autoFocus
-                      required
-                    />
+          <AnimatePresence mode="wait">
+            {intakeMode === 'CHOOSE' && (
+              <motion.div key="choose" variants={containerVariants} initial="hidden" animate="show" exit="exit" className="flex flex-col gap-10 items-center w-full">
+                <div className="text-center flex flex-col gap-3">
+                  <div className="font-mono text-[12px] uppercase tracking-widest text-accent">
+                    PATIENT CHECK-IN
                   </div>
-                  <div className="flex gap-3 mt-2">
-                    <Button type="button" variant="outline" className="flex-1" onClick={goBack} disabled={isLoading}>
-                      {t('Back', 'वापस')}
-                    </Button>
-                    <Button type="submit" variant="default" className="flex-1" disabled={isLoading}>
-                      {isLoading ? t('Sending…', 'भेजा जा रहा है…') : t('Send OTP →', 'ओटीपी भेजें →')}
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          )}
+                  <h1 className="font-serif text-[42px] leading-tight text-ink-primary">
+                    {t('How would you like to check in?', 'आप किस तरह चेक-इन करना चाहते हैं?')}
+                  </h1>
+                  <p className="font-sans text-[16px] text-ink-secondary m-0">
+                    {t('Choose an identification method to begin your consultation.', 'परामर्श शुरू करने के लिए कोई एक विकल्प चुनें।')}
+                  </p>
+                </div>
 
-          {/* ── 3. OTP VERIFICATION ──────────────────────────────────────────────── */}
-          {intakeMode === 'OTP' && (
-            <Card className="w-full max-w-[440px] mx-auto animate-in fade-in zoom-in-95 duration-300">
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-xl">{t('Verify OTP', 'ओटीपी सत्यापित करें')}</CardTitle>
-                <p className="text-sm text-ink-secondary mt-1">{t(`Code sent to +91 ${phoneNumber}`, `+91 ${phoneNumber} पर कोड भेजा गया है`)}</p>
-              </CardHeader>
-              <CardContent>
-                {devOtpHint && (
-                  <div className="bg-accent/10 border border-dashed border-accent rounded-md p-2 mb-4 text-center text-xs">
-                    🧪 {t('Dev mode OTP is:', 'डेव मोड ओटीपी:')} <strong className="text-accent">{devOtpHint}</strong>
-                  </div>
-                )}
-                <form onSubmit={handleOtpVerify} className="flex flex-col gap-4">
-                  <Input
-                    type="tel"
-                    className="text-2xl text-center tracking-[0.4em] font-bold h-14"
-                    placeholder="••••••"
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    disabled={isLoading}
-                    autoFocus
-                    required
-                  />
-                  <div className="flex gap-3 mt-2">
-                    <Button type="button" variant="outline" className="flex-1" onClick={() => setIntakeMode('PHONE')} disabled={isLoading}>
-                      {t('Change Number', 'नंबर बदलें')}
-                    </Button>
-                    <Button type="submit" variant="default" className="flex-[1.5]" disabled={isLoading}>
-                      {isLoading ? t('Verifying…', 'सत्यापित हो रहा है…') : t('Verify & Continue →', 'सत्यापित करें →')}
-                    </Button>
-                  </div>
-                  <button type="button" className="text-xs text-ink-muted hover:text-ink-secondary transition-colors text-center mt-2" onClick={lookupByPhone} disabled={isLoading}>
-                    {t('Skip verification and continue as guest →', 'सत्यापन छोड़ें और आगे बढ़ें →')}
-                  </button>
-                </form>
-              </CardContent>
-            </Card>
-          )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 w-full">
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                    className="flex flex-col items-center justify-center p-8 bg-paper-raised border-2 border-accent hover:border-accent rounded-2xl transition-all shadow-card group text-center hover:shadow-raised" 
+                    onClick={() => { clear(); setIntakeMode('PHONE'); }}
+                  >
+                    <span className="text-5xl mb-4">📱</span>
+                    <span className="font-sans text-lg font-bold text-ink-primary mb-2">{t('Mobile & OTP', 'मोबाइल और ओटीपी')}</span>
+                    <span className="text-sm text-ink-secondary mb-4 leading-relaxed">{t('Fast check-in via SMS code', 'एसएमएस कोड द्वारा त्वरित प्रवेश')}</span>
+                    <span className="font-mono text-[11px] uppercase tracking-wider font-bold bg-accent/20 text-accent px-3 py-1.5 rounded">{t('Popular', 'लोकप्रिय')}</span>
+                  </motion.button>
 
-          {/* ── 4. ABHA INPUT ────────────────────────────────────────────────────── */}
-          {intakeMode === 'ABHA' && (
-            <Card className="w-full max-w-[440px] mx-auto animate-in fade-in zoom-in-95 duration-300">
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-xl">{t('Enter ABHA ID', 'ABHA आईडी दर्ज करें')}</CardTitle>
-                <p className="text-sm text-ink-secondary mt-1">{t('14-digit Ayushman Bharat Health Account number', '14-अंकीय आयुष्मान भारत हेल्थ अकाउंट नंबर')}</p>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleAbhaSubmit} className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-ink-secondary uppercase tracking-wider">{t('ABHA Number', 'ABHA नंबर')}</label>
-                    <Input
-                      type="text"
-                      className="text-lg text-center tracking-widest h-12"
-                      placeholder="12-3456-7890-1234"
-                      value={abhaId}
-                      onChange={(e) => setAbhaId(e.target.value)}
-                      disabled={isLoading}
-                      autoFocus
-                      required
-                    />
-                  </div>
-                  <div className="flex gap-3 mt-2">
-                    <Button type="button" variant="outline" className="flex-1" onClick={goBack} disabled={isLoading}>
-                      {t('Back', 'वापस')}
-                    </Button>
-                    <Button type="submit" variant="default" className="flex-[1.5]" disabled={isLoading}>
-                      {isLoading ? t('Checking…', 'जांच जारी…') : t('Lookup ABHA →', 'ABHA खोजें →')}
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          )}
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                    className="flex flex-col items-center justify-center p-8 bg-paper-raised border-2 border-rule hover:border-accent/50 rounded-2xl transition-all shadow-card group text-center hover:shadow-raised" 
+                    onClick={() => { clear(); setIntakeMode('ABHA'); }}
+                  >
+                    <span className="text-5xl mb-4">🆔</span>
+                    <span className="font-sans text-lg font-bold text-ink-primary mb-2">{t('ABHA Health ID', 'ABHA हेल्थ आईडी')}</span>
+                    <span className="text-sm text-ink-secondary leading-relaxed">{t('14-digit Ayushman Bharat ID', '14-अंकीय आयुष्मान भारत खाता')}</span>
+                  </motion.button>
 
-          {/* ── 5. LOGIN ─────────────────────────────────────────────────────────── */}
-          {intakeMode === 'LOGIN' && (
-            <Card className="w-full max-w-[440px] mx-auto animate-in fade-in zoom-in-95 duration-300">
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-xl">{t('Sign In to MediKiosk', 'MediKiosk में साइन इन करें')}</CardTitle>
-                <p className="text-sm text-ink-secondary mt-1">{t('Use the email and password you registered with.', 'अपने पंजीकृत ईमेल और पासवर्ड का उपयोग करें।')}</p>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleLogin} noValidate className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-ink-secondary uppercase tracking-wider">{t('Email Address', 'ईमेल एड्रेस')}</label>
-                    <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} required />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-ink-secondary uppercase tracking-wider">{t('Password', 'पासवर्ड')}</label>
-                    <div className="relative">
-                      <Input type={showPw ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} required />
-                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink-primary" onClick={() => setShowPw(v => !v)}>
-                        {showPw ? '🙈' : '👁'}
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                    className="flex flex-col items-center justify-center p-8 bg-paper-raised border-2 border-rule hover:border-accent/50 rounded-2xl transition-all shadow-card group text-center hover:shadow-raised" 
+                    onClick={() => { clear(); setIntakeMode('LOGIN'); }}
+                  >
+                    <span className="text-5xl mb-4">🔐</span>
+                    <span className="font-sans text-lg font-bold text-ink-primary mb-2">{t('Registered Account', 'पंजीकृत खाता')}</span>
+                    <span className="text-sm text-ink-secondary leading-relaxed">{t('Sign in with email & password', 'ईमेल और पासवर्ड से लॉगिन करें')}</span>
+                  </motion.button>
+
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                    className="flex flex-col items-center justify-center p-8 bg-paper-raised border-2 border-rule hover:border-accent/50 rounded-2xl transition-all shadow-card group text-center disabled:opacity-50 hover:shadow-raised" 
+                    onClick={handleAnonymous} disabled={isLoading}
+                  >
+                    <span className="text-5xl mb-4">🚶</span>
+                    <span className="font-sans text-lg font-bold text-ink-primary mb-2">{t('Quick Walk-in', 'त्वरित आगंतुक')}</span>
+                    <span className="text-sm text-ink-secondary leading-relaxed">{t('Continue without registration', 'बिना पंजीकरण सीधे प्रवेश करें')}</span>
+                  </motion.button>
+                </div>
+
+                <div className="mt-4">
+                  <Link href="/start" className="font-mono text-[12px] uppercase tracking-wider text-ink-muted hover:text-ink-secondary transition-colors no-underline">
+                    ← {t('Go back / Change language', 'वापस जाएं / भाषा बदलें')}
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+
+            {intakeMode === 'PHONE' && (
+              <motion.div key="phone" variants={containerVariants} initial="hidden" animate="show" exit="exit" className="w-full">
+                <Card className="w-full max-w-[500px] mx-auto bg-paper-raised border-rule shadow-raised rounded-2xl">
+                  <CardHeader className="text-center pb-6 border-b border-rule/50">
+                    <CardTitle className="font-serif text-[32px] text-ink-primary">{t('Enter Mobile Number', 'मोबाइल नंबर दर्ज करें')}</CardTitle>
+                    <p className="font-sans text-[15px] text-ink-secondary mt-2">{t('We will send a 6-digit verification code.', 'हम ६ अंकों का सत्यापन कोड भेजेंगे।')}</p>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <form onSubmit={handlePhoneSubmit} className="flex flex-col gap-6">
+                      <div className="flex flex-col gap-2">
+                        <label className="font-mono text-[12px] font-bold text-ink-secondary uppercase tracking-wider">{t('10-Digit Mobile Number', '१० अंकों का मोबाइल नंबर')}</label>
+                        <Input
+                          type="tel"
+                          className="h-14 text-lg bg-paper-sunken border-rule focus-visible:ring-accent"
+                          placeholder="9876543210"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                          disabled={isLoading}
+                          autoFocus
+                          required
+                        />
+                      </div>
+                      <div className="flex gap-4 mt-2">
+                        <Button type="button" variant="outline" className="flex-1 h-14 font-bold" onClick={goBack} disabled={isLoading}>
+                          {t('Back', 'वापस')}
+                        </Button>
+                        <Button type="submit" variant="default" className="flex-[2] h-14 font-bold shadow-raised" disabled={isLoading}>
+                          {isLoading ? t('Sending…', 'भेजा जा रहा है…') : t('Send OTP →', 'ओटीपी भेजें →')}
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {intakeMode === 'OTP' && (
+              <motion.div key="otp" variants={containerVariants} initial="hidden" animate="show" exit="exit" className="w-full">
+                <Card className="w-full max-w-[500px] mx-auto bg-paper-raised border-rule shadow-raised rounded-2xl">
+                  <CardHeader className="text-center pb-6 border-b border-rule/50">
+                    <CardTitle className="font-serif text-[32px] text-ink-primary">{t('Verify OTP', 'ओटीपी सत्यापित करें')}</CardTitle>
+                    <p className="font-sans text-[15px] text-ink-secondary mt-2">{t(`Code sent to +91 ${phoneNumber}`, `+91 ${phoneNumber} पर कोड भेजा गया है`)}</p>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    {devOtpHint && (
+                      <div className="bg-accent/10 border border-dashed border-accent rounded-lg p-3 mb-6 text-center text-sm">
+                        🧪 {t('Dev mode OTP is:', 'डेव मोड ओटीपी:')} <strong className="text-accent font-mono ml-1">{devOtpHint}</strong>
+                      </div>
+                    )}
+                    <form onSubmit={handleOtpVerify} className="flex flex-col gap-6">
+                      <Input
+                        type="tel"
+                        className="text-3xl text-center tracking-[0.5em] font-mono h-16 bg-paper-sunken border-rule focus-visible:ring-accent"
+                        placeholder="••••••"
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        disabled={isLoading}
+                        autoFocus
+                        required
+                      />
+                      <div className="flex gap-4 mt-2">
+                        <Button type="button" variant="outline" className="flex-1 h-14 font-bold" onClick={() => setIntakeMode('PHONE')} disabled={isLoading}>
+                          {t('Change Number', 'नंबर बदलें')}
+                        </Button>
+                        <Button type="submit" variant="default" className="flex-[2] h-14 font-bold shadow-raised" disabled={isLoading}>
+                          {isLoading ? t('Verifying…', 'सत्यापित हो रहा है…') : t('Verify & Continue →', 'सत्यापित करें →')}
+                        </Button>
+                      </div>
+                      <button type="button" className="font-mono text-[12px] uppercase tracking-wide text-ink-muted hover:text-ink-secondary transition-colors text-center mt-2" onClick={lookupByPhone} disabled={isLoading}>
+                        {t('Skip verification and continue as guest →', 'सत्यापन छोड़ें और आगे बढ़ें →')}
+                      </button>
+                    </form>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {intakeMode === 'ABHA' && (
+              <motion.div key="abha" variants={containerVariants} initial="hidden" animate="show" exit="exit" className="w-full">
+                <Card className="w-full max-w-[500px] mx-auto bg-paper-raised border-rule shadow-raised rounded-2xl">
+                  <CardHeader className="text-center pb-6 border-b border-rule/50">
+                    <CardTitle className="font-serif text-[32px] text-ink-primary">{t('Enter ABHA ID', 'ABHA आईडी दर्ज करें')}</CardTitle>
+                    <p className="font-sans text-[15px] text-ink-secondary mt-2">{t('14-digit Ayushman Bharat Health Account number', '14-अंकीय आयुष्मान भारत हेल्थ अकाउंट नंबर')}</p>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <form onSubmit={handleAbhaSubmit} className="flex flex-col gap-6">
+                      <div className="flex flex-col gap-2">
+                        <label className="font-mono text-[12px] font-bold text-ink-secondary uppercase tracking-wider">{t('ABHA Number', 'ABHA नंबर')}</label>
+                        <Input
+                          type="text"
+                          className="text-xl text-center tracking-[0.2em] font-mono h-14 bg-paper-sunken border-rule focus-visible:ring-accent"
+                          placeholder="12-3456-7890-1234"
+                          value={abhaId}
+                          onChange={(e) => setAbhaId(e.target.value)}
+                          disabled={isLoading}
+                          autoFocus
+                          required
+                        />
+                      </div>
+                      <div className="flex gap-4 mt-2">
+                        <Button type="button" variant="outline" className="flex-1 h-14 font-bold" onClick={goBack} disabled={isLoading}>
+                          {t('Back', 'वापस')}
+                        </Button>
+                        <Button type="submit" variant="default" className="flex-[2] h-14 font-bold shadow-raised" disabled={isLoading}>
+                          {isLoading ? t('Checking…', 'जांच जारी…') : t('Lookup ABHA →', 'ABHA खोजें →')}
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {intakeMode === 'LOGIN' && (
+              <motion.div key="login" variants={containerVariants} initial="hidden" animate="show" exit="exit" className="w-full">
+                <Card className="w-full max-w-[500px] mx-auto bg-paper-raised border-rule shadow-raised rounded-2xl">
+                  <CardHeader className="text-center pb-6 border-b border-rule/50">
+                    <CardTitle className="font-serif text-[32px] text-ink-primary">{t('Sign In to MediKiosk', 'MediKiosk में साइन इन करें')}</CardTitle>
+                    <p className="font-sans text-[15px] text-ink-secondary mt-2">{t('Use the email and password you registered with.', 'अपने पंजीकृत ईमेल और पासवर्ड का उपयोग करें।')}</p>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <form onSubmit={handleLogin} noValidate className="flex flex-col gap-6">
+                      <div className="flex flex-col gap-2">
+                        <label className="font-mono text-[12px] font-bold text-ink-secondary uppercase tracking-wider">{t('Email Address', 'ईमेल एड्रेस')}</label>
+                        <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} required className="h-14 bg-paper-sunken border-rule focus-visible:ring-accent" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label className="font-mono text-[12px] font-bold text-ink-secondary uppercase tracking-wider">{t('Password', 'पासवर्ड')}</label>
+                        <div className="relative">
+                          <Input type={showPw ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} required className="h-14 bg-paper-sunken border-rule focus-visible:ring-accent" />
+                          <button type="button" className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink-primary text-xl" onClick={() => setShowPw(v => !v)}>
+                            {showPw ? '🙈' : '👁'}
+                          </button>
+                        </div>
+                      </div>
+                      <button type="button" className="font-sans text-sm text-accent hover:underline text-right -mt-2" onClick={() => { clear(); setIntakeMode('FORGOT'); }}>
+                        {t('Forgot your password?', 'पासवर्ड भूल गए?')}
+                      </button>
+                      <div className="flex gap-4 mt-2">
+                        <Button type="button" variant="outline" className="flex-1 h-14 font-bold" onClick={goBack} disabled={isLoading}>
+                          {t('Back', 'वापस')}
+                        </Button>
+                        <Button type="submit" variant="default" className="flex-[2] h-14 font-bold shadow-raised" disabled={isLoading}>
+                          {isLoading ? t('Signing in…', 'साइन इन हो रहा है…') : t('Sign In →', 'साइन इन करें →')}
+                        </Button>
+                      </div>
+                    </form>
+                    <div className="text-center mt-8 font-sans text-sm text-ink-secondary border-t border-rule/50 pt-6">
+                      {t("Don't have an account?", 'खाता नहीं है?')}{' '}
+                      <button className="text-accent font-bold hover:underline" onClick={() => { clear(); setIntakeMode('REGISTER'); }}>
+                        {t('Register here', 'यहाँ पंजीकरण करें')}
                       </button>
                     </div>
-                  </div>
-                  <button type="button" className="text-xs text-accent hover:underline text-center" onClick={() => { clear(); setIntakeMode('FORGOT'); }}>
-                    {t('Forgot your password?', 'पासवर्ड भूल गए?')}
-                  </button>
-                  <div className="flex gap-3 mt-2">
-                    <Button type="button" variant="outline" className="flex-1" onClick={goBack} disabled={isLoading}>
-                      {t('Back', 'वापस')}
-                    </Button>
-                    <Button type="submit" variant="default" className="flex-[1.5]" disabled={isLoading}>
-                      {isLoading ? t('Signing in…', 'साइन इन हो रहा है…') : t('Sign In →', 'साइन इन करें →')}
-                    </Button>
-                  </div>
-                </form>
-                <div className="text-center mt-6 text-sm text-ink-secondary border-t border-dark-rule pt-4">
-                  {t("Don't have an account?", 'खाता नहीं है?')}{' '}
-                  <button className="text-accent font-medium hover:underline" onClick={() => { clear(); setIntakeMode('REGISTER'); }}>
-                    {t('Register here', 'यहाँ पंजीकरण करें')}
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
 
-          {/* ── 6. REGISTER / DEMOGRAPHICS ───────────────────────────────────────── */}
-          {intakeMode === 'REGISTER' && (
-            <Card className="w-full max-w-[580px] mx-auto animate-in fade-in zoom-in-95 duration-300">
-              <CardHeader className="pb-4 border-b border-dark-rule mb-4">
-                <CardTitle className="text-xl">{t('Patient Details', 'मरीज की जानकारी')}</CardTitle>
-                <p className="text-sm text-ink-secondary mt-1">{t('Complete your demographic card to continue.', 'जारी रखने के लिए मरीज की बुनियादी जानकारी भरें।')}</p>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleRegister} noValidate className="flex flex-col gap-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-ink-secondary uppercase tracking-wider">{t('First Name', 'पहला नाम')} <span className="text-signal-critical">*</span></label>
-                      <Input type="text" placeholder={t('e.g. Ramesh', 'जैसे रमेश')} value={firstName} onChange={(e) => setFirstName(e.target.value)} disabled={isLoading} required />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-ink-secondary uppercase tracking-wider">{t('Last Name', 'उपनाम')} <span className="text-signal-critical">*</span></label>
-                      <Input type="text" placeholder={t('e.g. Gupta', 'जैसे गुप्ता')} value={lastName} onChange={(e) => setLastName(e.target.value)} disabled={isLoading} required />
-                    </div>
-                  </div>
+            {intakeMode === 'REGISTER' && (
+              <motion.div key="register" variants={containerVariants} initial="hidden" animate="show" exit="exit" className="w-full">
+                <Card className="w-full max-w-[700px] mx-auto bg-paper-raised border-rule shadow-raised rounded-2xl">
+                  <CardHeader className="pb-6 border-b border-rule/50 mb-6">
+                    <CardTitle className="font-serif text-[32px] text-ink-primary">{t('Patient Details', 'मरीज की जानकारी')}</CardTitle>
+                    <p className="font-sans text-[15px] text-ink-secondary mt-2">{t('Complete your demographic card to continue.', 'जारी रखने के लिए मरीज की बुनियादी जानकारी भरें।')}</p>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleRegister} noValidate className="flex flex-col gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="flex flex-col gap-2">
+                          <label className="font-mono text-[12px] font-bold text-ink-secondary uppercase tracking-wider">{t('First Name', 'पहला नाम')} <span className="text-signal-critical">*</span></label>
+                          <Input type="text" placeholder={t('e.g. Ramesh', 'जैसे रमेश')} value={firstName} onChange={(e) => setFirstName(e.target.value)} disabled={isLoading} required className="h-14 bg-paper-sunken border-rule focus-visible:ring-accent" />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="font-mono text-[12px] font-bold text-ink-secondary uppercase tracking-wider">{t('Last Name', 'उपनाम')} <span className="text-signal-critical">*</span></label>
+                          <Input type="text" placeholder={t('e.g. Gupta', 'जैसे गुप्ता')} value={lastName} onChange={(e) => setLastName(e.target.value)} disabled={isLoading} required className="h-14 bg-paper-sunken border-rule focus-visible:ring-accent" />
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-ink-secondary uppercase tracking-wider">{t('Age', 'उम्र')} <span className="text-signal-critical">*</span></label>
-                      <Input type="number" placeholder="25" min="0" max="125" value={age} onChange={(e) => setAge(e.target.value)} disabled={isLoading} required />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-ink-secondary uppercase tracking-wider">{t('Gender', 'लिंग')} <span className="text-signal-critical">*</span></label>
-                      <select className="flex h-10 w-full rounded-md border border-dark-rule bg-dark-sunken px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50 transition-colors" value={gender} onChange={(e) => setGender(e.target.value as any)} disabled={isLoading} required>
-                        <option value="">— {t('Select', 'चुनें')} —</option>
-                        <option value="MALE">{t('Male', 'पुरुष')}</option>
-                        <option value="FEMALE">{t('Female', 'महिला')}</option>
-                        <option value="OTHER">{t('Other / Prefer not to say', 'अन्य')}</option>
-                      </select>
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="flex flex-col gap-2">
+                          <label className="font-mono text-[12px] font-bold text-ink-secondary uppercase tracking-wider">{t('Age', 'उम्र')} <span className="text-signal-critical">*</span></label>
+                          <Input type="number" placeholder="25" min="0" max="125" value={age} onChange={(e) => setAge(e.target.value)} disabled={isLoading} required className="h-14 bg-paper-sunken border-rule focus-visible:ring-accent" />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="font-mono text-[12px] font-bold text-ink-secondary uppercase tracking-wider">{t('Gender', 'लिंग')} <span className="text-signal-critical">*</span></label>
+                          <select className="flex h-14 w-full rounded-lg border border-rule bg-paper-sunken px-4 py-2 font-sans text-[15px] text-ink-primary placeholder:text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50 transition-colors" value={gender} onChange={(e) => setGender(e.target.value as any)} disabled={isLoading} required>
+                            <option value="">— {t('Select', 'चुनें')} —</option>
+                            <option value="MALE">{t('Male', 'पुरुष')}</option>
+                            <option value="FEMALE">{t('Female', 'महिला')}</option>
+                            <option value="OTHER">{t('Other / Prefer not to say', 'अन्य')}</option>
+                          </select>
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-ink-secondary uppercase tracking-wider">{t('Mobile Number', 'मोबाइल नंबर')}</label>
-                      <Input type="tel" placeholder="9876543210" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))} disabled={isLoading} />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-ink-secondary uppercase tracking-wider">{t('ABHA Number', 'ABHA नंबर')}</label>
-                      <Input type="text" placeholder="12345678901234" value={abhaId} onChange={(e) => setAbhaId(e.target.value)} disabled={isLoading} />
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="flex flex-col gap-2">
+                          <label className="font-mono text-[12px] font-bold text-ink-secondary uppercase tracking-wider">{t('Mobile Number', 'मोबाइल नंबर')}</label>
+                          <Input type="tel" placeholder="9876543210" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))} disabled={isLoading} className="h-14 bg-paper-sunken border-rule focus-visible:ring-accent" />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="font-mono text-[12px] font-bold text-ink-secondary uppercase tracking-wider">{t('ABHA Number', 'ABHA नंबर')}</label>
+                          <Input type="text" placeholder="12345678901234" value={abhaId} onChange={(e) => setAbhaId(e.target.value)} disabled={isLoading} className="h-14 bg-paper-sunken border-rule focus-visible:ring-accent" />
+                        </div>
+                      </div>
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-ink-secondary uppercase tracking-wider">{t('Email Address (Optional)', 'ईमेल एड्रेस (वैकल्पिक)')}</label>
-                    <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
-                  </div>
+                      <div className="flex flex-col gap-2">
+                        <label className="font-mono text-[12px] font-bold text-ink-secondary uppercase tracking-wider">{t('Email Address (Optional)', 'ईमेल एड्रेस (वैकल्पिक)')}</label>
+                        <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} className="h-14 bg-paper-sunken border-rule focus-visible:ring-accent" />
+                      </div>
 
-                  <div className="flex gap-3 mt-4">
-                    <Button type="button" variant="outline" className="flex-1" onClick={goBack} disabled={isLoading}>
-                      {t('Back', 'वापस')}
-                    </Button>
-                    <Button type="submit" variant="default" className="flex-[2]" disabled={isLoading}>
-                      {isLoading ? t('Saving…', 'सहेजा जा रहा है…') : t('Save & Continue →', 'सहेजें और आगे बढ़ें →')}
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          )}
+                      <div className="flex gap-4 mt-6">
+                        <Button type="button" variant="outline" className="flex-1 h-14 font-bold" onClick={goBack} disabled={isLoading}>
+                          {t('Back', 'वापस')}
+                        </Button>
+                        <Button type="submit" variant="default" className="flex-[2] h-14 font-bold shadow-raised" disabled={isLoading}>
+                          {isLoading ? t('Saving…', 'सहेजा जा रहा है…') : t('Save & Continue →', 'सहेजें और आगे बढ़ें →')}
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
 
-          {/* ── 7. FORGOT PASSWORD ───────────────────────────────────────────────── */}
-          {intakeMode === 'FORGOT' && (
-            <Card className="w-full max-w-[440px] mx-auto animate-in fade-in zoom-in-95 duration-300">
-              <CardContent className="pt-6">
-              {resetSent ? (
-                <div className="text-center">
-                  <div className="text-5xl mb-4">✉️</div>
-                  <CardTitle className="mb-2">{t('Reset link sent!', 'रीसेट लिंक भेजा गया!')}</CardTitle>
-                  <p className="text-sm text-ink-secondary mb-6">
-                    {t(`Check ${email} for password reset instructions.`, `${email} पर पासवर्ड रीसेट लिंक देखें।`)}
-                  </p>
-                  <Button variant="default" className="w-full" onClick={() => { setResetSent(false); setIntakeMode('LOGIN'); }}>
-                    {t('Back to Sign In', 'साइन इन पर वापस जाएं')}
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <div className="text-center pb-4">
-                    <CardTitle className="text-xl">{t('Forgot Password', 'पासवर्ड भूल गए')}</CardTitle>
-                    <p className="text-sm text-ink-secondary mt-1">{t('Enter your email to receive a reset link.', 'रीसेट लिंक प्राप्त करने के लिए अपना ईमेल दर्ज करें।')}</p>
-                  </div>
-                  <form onSubmit={handleForgotPassword} className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-ink-secondary uppercase tracking-wider">{t('Email Address', 'ईमेल एड्रेस')}</label>
-                      <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} required />
-                    </div>
-                    <div className="flex gap-3 mt-2">
-                      <Button type="button" variant="outline" className="flex-1" onClick={() => setIntakeMode('LOGIN')} disabled={isLoading}>
-                        {t('Back', 'वापस')}
-                      </Button>
-                      <Button type="submit" variant="default" className="flex-[1.5]" disabled={isLoading}>
-                        {isLoading ? t('Sending…', 'भेजा जा रहा है…') : t('Send Reset Link →', 'रीसेट लिंक भेजें →')}
+            {intakeMode === 'FORGOT' && (
+              <motion.div key="forgot" variants={containerVariants} initial="hidden" animate="show" exit="exit" className="w-full">
+                <Card className="w-full max-w-[500px] mx-auto bg-paper-raised border-rule shadow-raised rounded-2xl">
+                  <CardContent className="pt-8 pb-8">
+                  {resetSent ? (
+                    <div className="text-center">
+                      <div className="text-6xl mb-6">✉️</div>
+                      <CardTitle className="font-serif text-[32px] text-ink-primary mb-3">{t('Reset link sent!', 'रीसेट लिंक भेजा गया!')}</CardTitle>
+                      <p className="font-sans text-[15px] text-ink-secondary mb-8 leading-relaxed">
+                        {t(`Check ${email} for password reset instructions.`, `${email} पर पासवर्ड रीसेट लिंक देखें।`)}
+                      </p>
+                      <Button variant="default" className="w-full h-14 font-bold shadow-raised" onClick={() => { setResetSent(false); setIntakeMode('LOGIN'); }}>
+                        {t('Back to Sign In', 'साइन इन पर वापस जाएं')}
                       </Button>
                     </div>
-                  </form>
-                </>
-              )}
-              </CardContent>
-            </Card>
-          )}
+                  ) : (
+                    <>
+                      <div className="text-center pb-6 border-b border-rule/50 mb-6">
+                        <CardTitle className="font-serif text-[32px] text-ink-primary">{t('Forgot Password', 'पासवर्ड भूल गए')}</CardTitle>
+                        <p className="font-sans text-[15px] text-ink-secondary mt-2">{t('Enter your email to receive a reset link.', 'रीसेट लिंक प्राप्त करने के लिए अपना ईमेल दर्ज करें।')}</p>
+                      </div>
+                      <form onSubmit={handleForgotPassword} className="flex flex-col gap-6">
+                        <div className="flex flex-col gap-2">
+                          <label className="font-mono text-[12px] font-bold text-ink-secondary uppercase tracking-wider">{t('Email Address', 'ईमेल एड्रेस')}</label>
+                          <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} required className="h-14 bg-paper-sunken border-rule focus-visible:ring-accent" />
+                        </div>
+                        <div className="flex gap-4 mt-2">
+                          <Button type="button" variant="outline" className="flex-1 h-14 font-bold" onClick={() => setIntakeMode('LOGIN')} disabled={isLoading}>
+                            {t('Back', 'वापस')}
+                          </Button>
+                          <Button type="submit" variant="default" className="flex-[2] h-14 font-bold shadow-raised" disabled={isLoading}>
+                            {isLoading ? t('Sending…', 'भेजा जा रहा है…') : t('Send Reset Link →', 'रीसेट लिंक भेजें →')}
+                          </Button>
+                        </div>
+                      </form>
+                    </>
+                  )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </main>
     </div>

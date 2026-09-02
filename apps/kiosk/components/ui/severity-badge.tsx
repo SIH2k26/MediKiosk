@@ -1,4 +1,4 @@
-﻿import * as React from "react"
+import * as React from "react"
 import { cn } from "./button"
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -17,3 +17,5 @@ function SeverityBadge({ className, severity = "default", ...props }: BadgeProps
   )
 }
 export { SeverityBadge }
+
+

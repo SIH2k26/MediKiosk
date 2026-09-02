@@ -1,11 +1,11 @@
-﻿import * as React from "react"
+import * as React from "react"
 import { cn } from "./button" // reuse cn
 
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("rounded-lg border border-dark-rule bg-dark-raised text-ink-primary shadow-card", className)}
+      className={cn("rounded-lg border border-rule bg-paper-raised text-ink-primary shadow-card", className)}
       {...props}
     />
   )
@@ -34,3 +34,5 @@ const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
 CardContent.displayName = "CardContent"
 
 export { Card, CardHeader, CardTitle, CardContent }
+
+

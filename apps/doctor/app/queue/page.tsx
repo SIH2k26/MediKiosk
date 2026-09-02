@@ -10,7 +10,7 @@ export default function QueueRedirectPage() {
   }, [router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg-dark text-ink-primary">
+    <div className="flex min-h-screen items-center justify-center bg-bg-paper text-ink-primary">
       <div className="text-sm text-ink-muted">Loading Patient Queue…</div>
     </div>
   );

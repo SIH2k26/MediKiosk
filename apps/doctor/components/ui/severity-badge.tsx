@@ -1,4 +1,4 @@
-﻿import * as React from "react"
+import * as React from "react"
 import { cn } from "./button"
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -13,7 +13,8 @@ function SeverityBadge({ className, severity = "default", ...props }: BadgeProps
   }
   
   return (
-    <div className={cn("inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold font-sans uppercase tracking-wider transition-colors focus:outline-none focus:ring-2 focus:ring-dark-ruleStrong", severities[severity], className)} {...props} />
+    <div className={cn("inline-flex items-center rounded-md border px-2.5 py-0.5 text-[12px] font-semibold font-mono uppercase tracking-wide transition-colors focus:outline-none focus:ring-2 focus:ring-dark-ruleStrong", severities[severity], className)} {...props} />
   )
 }
 export { SeverityBadge }
+

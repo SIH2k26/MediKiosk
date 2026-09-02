@@ -1,24 +1,34 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { Bodoni_Moda, Cormorant_Garamond } from 'next/font/google';
+
+
+const bodoni = Bodoni_Moda({ subsets: ['latin'], weight: ['700', '800'], variable: '--font-bodoni', display: 'swap' });
+const cormorant = Cormorant_Garamond({ subsets: ['latin'], weight: ['400', '500', '600', '700'], style: ['normal', 'italic'], variable: '--font-cormorant', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'MediKiosk — Admin Panel',
-  description: 'System administration for MediKiosk.',
+  title: 'MediKiosk',
+  description: 'AI-powered clinical history and patient intake platform.',
   robots: 'noindex, nofollow',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en">
+    <html lang="hi" suppressHydrationWarning className={cormorant.variable}>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <meta name="theme-color" content="#F5F8F8" />
       </head>
-      <body className="bg-dark text-ink-primary font-sans antialiased min-h-screen">
+      <body className="bg-gradient-page text-ink-primary font-sans antialiased min-h-screen">
         {children}
       </body>
     </html>
   );
 }
+
+
+

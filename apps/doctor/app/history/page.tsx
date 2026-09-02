@@ -122,8 +122,8 @@ export default function DoctorHistoryPage() {
 
   if (!authChecked) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-dark text-ink-primary">
-        <p className="text-xs font-medium text-ink-tertiary">Authenticating…</p>
+      <div className="flex items-center justify-center min-h-screen bg-paper text-ink-primary">
+        <p className="text-xs font-medium text-ink-secondary">Authenticating…</p>
       </div>
     );
   }
@@ -140,29 +140,29 @@ export default function DoctorHistoryPage() {
   const initials = user ? user.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() : 'DR';
 
   return (
-    <div className="flex min-h-screen bg-dark text-ink-primary font-sans">
+    <div className="flex min-h-screen bg-paper text-ink-primary font-sans">
       {/* ── Sidebar ── */}
-      <aside className="w-64 bg-dark-raised border-r border-dark-rule flex flex-col justify-between shrink-0 p-4 min-h-screen" role="navigation" aria-label="Doctor portal navigation">
+      <aside className="w-64 bg-paper border-r border-rule flex flex-col justify-between shrink-0 p-4 min-h-screen" role="navigation" aria-label="Doctor portal navigation">
         <div>
-          <div className="flex items-center gap-3 pb-6 border-b border-dark-rule">
+          <div className="flex items-center gap-3 pb-6 border-b border-rule">
             <div className="flex items-center justify-center w-8 h-8 rounded bg-accent-wash text-accent shrink-0" aria-hidden="true">
               <MediKioskLogo />
             </div>
             <div>
               <div className="text-sm font-bold text-ink-primary leading-tight">MediKiosk</div>
-              <div className="text-xs text-ink-tertiary">Doctor Portal</div>
+              <div className="text-xs text-ink-secondary">Doctor Portal</div>
             </div>
           </div>
 
           <nav className="mt-4 space-y-1">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted mt-4 mb-2 px-2">OPD</div>
-            <Link href="/" className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-md text-ink-secondary hover:text-ink-primary hover:bg-dark-sunken transition-colors">
+            <Link href="/" className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-md text-ink-secondary hover:text-ink-primary hover:bg-paper-sunken transition-colors">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M2 6h12M2 10h12M6 2v12M10 2v12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
               </svg>
               Patient Queue
             </Link>
-            <Link href="/triage" className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-md text-ink-secondary hover:text-ink-primary hover:bg-dark-sunken transition-colors">
+            <Link href="/triage" className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-md text-ink-secondary hover:text-ink-primary hover:bg-paper-sunken transition-colors">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M8 2L14 9H2L8 2Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
                 <path d="M8 6v3M8 11h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -178,14 +178,14 @@ export default function DoctorHistoryPage() {
             </Link>
 
             <div className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted mt-6 mb-2 px-2">Portals</div>
-            <a href="http://localhost:3000" className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-md text-ink-secondary hover:text-ink-primary hover:bg-dark-sunken transition-colors" target="_blank" rel="noopener noreferrer">
+            <a href="http://localhost:3000" className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-md text-ink-secondary hover:text-ink-primary hover:bg-paper-sunken transition-colors" target="_blank" rel="noopener noreferrer">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
                 <path d="M5 13v2M11 13v2M3 15h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
               </svg>
               Patient Kiosk
             </a>
-            <a href="http://localhost:3002" className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-md text-ink-secondary hover:text-ink-primary hover:bg-dark-sunken transition-colors" target="_blank" rel="noopener noreferrer">
+            <a href="http://localhost:3002" className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-md text-ink-secondary hover:text-ink-primary hover:bg-paper-sunken transition-colors" target="_blank" rel="noopener noreferrer">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M8 1L14 4.5V11.5L8 15L2 11.5V4.5L8 1Z" stroke="currentColor" strokeWidth="1.2" fill="none" />
               </svg>
@@ -194,28 +194,28 @@ export default function DoctorHistoryPage() {
           </nav>
         </div>
 
-        <div className="pt-4 border-t border-dark-rule space-y-2">
+        <div className="pt-4 border-t border-rule space-y-2">
           {user && (
-            <div className="flex items-center gap-3 p-2.5 rounded-md bg-dark-sunken border border-dark-rule">
-              <div className="w-7 h-7 rounded bg-accent text-dark font-bold text-xs flex items-center justify-center shrink-0" aria-hidden="true">{initials}</div>
+            <div className="flex items-center gap-3 p-2.5 rounded-md bg-paper-sunken border border-rule">
+              <div className="w-7 h-7 rounded bg-accent text-ink-primary font-bold text-xs flex items-center justify-center shrink-0" aria-hidden="true">{initials}</div>
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-medium text-ink-primary truncate">{user.fullName}</div>
-                <div className="text-[10px] text-ink-tertiary capitalize truncate">{user.role}</div>
+                <div className="text-[10px] text-ink-secondary capitalize truncate">{user.role}</div>
               </div>
             </div>
           )}
-          <button className="w-full text-left px-3 py-2 text-xs font-medium text-ink-secondary hover:text-signal-critical rounded-md hover:bg-dark-sunken transition-colors" onClick={handleSignOut}>
+          <button className="w-full text-left px-3 py-2 text-xs font-medium text-ink-secondary hover:text-signal-critical rounded-md hover:bg-paper-sunken transition-colors" onClick={handleSignOut}>
             Sign Out
           </button>
         </div>
       </aside>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 flex flex-col min-w-0 bg-dark">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6 border-b border-dark-rule bg-dark-raised">
+      <main className="flex-1 flex flex-col min-w-0 bg-transparent">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6 border-b border-rule bg-dark text-ink-onDark">
           <div>
             <h1 className="text-xl font-bold text-ink-primary">Patient Encounters & Clinical History</h1>
-            <p className="text-xs text-ink-tertiary mt-1">Search past OPD consultations, verified AI intake summaries, and ABDM care records.</p>
+            <p className="text-xs text-ink-secondary mt-1">Search past OPD consultations, verified AI intake summaries, and ABDM care records.</p>
           </div>
           <div className="flex items-center gap-3">
             <input
@@ -223,40 +223,40 @@ export default function DoctorHistoryPage() {
               placeholder="Search by name, UHID, ABHA or complaint…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full md:w-80 px-3 py-2 bg-dark-sunken border border-dark-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-dark-ruleStrong transition-colors"
+              className="w-full md:w-80 px-3 py-2 bg-paper-sunken border border-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-ruleStrong transition-colors"
             />
           </div>
         </div>
 
         <div className="p-6 flex-1 space-y-6">
-          <div className="bg-dark-raised border border-dark-rule rounded-lg shadow-card overflow-hidden">
-            <div className="p-4 border-b border-dark-rule">
+          <div className="bg-paper border border-rule rounded-lg shadow-card overflow-hidden">
+            <div className="p-4 border-b border-rule">
               <h2 className="text-sm font-semibold text-ink-primary">Completed Consultations ({filtered.length})</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-dark-sunken border-b border-dark-rule">
-                    <th className="p-3 text-xs font-medium text-ink-tertiary uppercase tracking-wider">Visit Date</th>
-                    <th className="p-3 text-xs font-medium text-ink-tertiary uppercase tracking-wider">OPD Token</th>
-                    <th className="p-3 text-xs font-medium text-ink-tertiary uppercase tracking-wider">Patient</th>
-                    <th className="p-3 text-xs font-medium text-ink-tertiary uppercase tracking-wider">UHID / ABHA</th>
-                    <th className="p-3 text-xs font-medium text-ink-tertiary uppercase tracking-wider">Chief Complaint</th>
-                    <th className="p-3 text-xs font-medium text-ink-tertiary uppercase tracking-wider">Triage Level</th>
-                    <th className="p-3 text-xs font-medium text-ink-tertiary uppercase tracking-wider">Status</th>
-                    <th className="p-3 text-xs font-medium text-ink-tertiary uppercase tracking-wider">Action</th>
+                  <tr className="bg-paper-sunken border-b border-rule">
+                    <th className="p-3 text-xs font-medium text-ink-secondary uppercase tracking-wider">Visit Date</th>
+                    <th className="p-3 text-xs font-medium text-ink-secondary uppercase tracking-wider">OPD Token</th>
+                    <th className="p-3 text-xs font-medium text-ink-secondary uppercase tracking-wider">Patient</th>
+                    <th className="p-3 text-xs font-medium text-ink-secondary uppercase tracking-wider">UHID / ABHA</th>
+                    <th className="p-3 text-xs font-medium text-ink-secondary uppercase tracking-wider">Chief Complaint</th>
+                    <th className="p-3 text-xs font-medium text-ink-secondary uppercase tracking-wider">Triage Level</th>
+                    <th className="p-3 text-xs font-medium text-ink-secondary uppercase tracking-wider">Status</th>
+                    <th className="p-3 text-xs font-medium text-ink-secondary uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-dark-rule">
                   {filtered.map((item) => (
-                    <tr key={item.id} className="hover:bg-dark-sunken transition-colors">
-                      <td className="p-3 text-xs text-ink-tertiary whitespace-nowrap align-top">{item.visitDate}</td>
+                    <tr key={item.id} className="hover:bg-paper-sunken transition-colors">
+                      <td className="p-3 text-xs text-ink-secondary whitespace-nowrap align-top">{item.visitDate}</td>
                       <td className="p-3 align-top whitespace-nowrap">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-dark-sunken text-ink-primary border border-dark-rule">{item.opdToken}</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-paper-sunken text-ink-primary border border-rule">{item.opdToken}</span>
                       </td>
                       <td className="p-3 align-top">
                         <div className="font-semibold text-ink-primary text-xs">{item.patientName}</div>
-                        <div className="text-[11px] text-ink-tertiary">
+                        <div className="text-[11px] text-ink-secondary">
                           {item.gender} · {item.age} yrs
                         </div>
                       </td>
@@ -273,12 +273,12 @@ export default function DoctorHistoryPage() {
                         )}
                       </td>
                       <td className="p-3 align-top whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border border-dark-rule ${
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border border-rule ${
                           item.riskLevel === 'EMERGENCY'
-                            ? 'text-signal-critical bg-dark-sunken'
+                            ? 'text-signal-critical bg-paper-sunken'
                             : item.riskLevel === 'HIGH_PRIORITY' || item.riskLevel === 'WARNING'
-                            ? 'text-signal-warning bg-dark-sunken'
-                            : 'text-ink-secondary bg-dark-sunken'
+                            ? 'text-signal-warning bg-paper-sunken'
+                            : 'text-ink-secondary bg-paper-sunken'
                         }`}>
                           {item.riskLevel}
                         </span>
@@ -290,7 +290,7 @@ export default function DoctorHistoryPage() {
                       </td>
                       <td className="p-3 align-top whitespace-nowrap">
                         <button
-                          className="px-2.5 py-1 text-xs font-medium rounded-md bg-dark-sunken border border-dark-rule text-ink-primary hover:bg-dark-raised hover:border-dark-ruleStrong transition-colors"
+                          className="px-2.5 py-1 text-xs font-medium rounded-md bg-paper-sunken border border-rule text-ink-primary hover:bg-paper hover:border-ruleStrong transition-colors"
                           onClick={() => setSelectedEncounter(item)}
                         >
                           View Record
@@ -308,38 +308,38 @@ export default function DoctorHistoryPage() {
       {/* ── Encounter Modal ── */}
       {selectedEncounter && (
         <div className="fixed inset-0 z-50 bg-dark/80 flex items-center justify-center p-4" onClick={() => setSelectedEncounter(null)}>
-          <div className="w-full max-w-2xl bg-dark-raised border border-dark-rule rounded-lg shadow-raised overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-dark-rule">
+          <div className="w-full max-w-2xl bg-paper border border-rule rounded-lg shadow-raised overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-rule">
               <div>
                 <h2 className="text-base font-bold text-ink-primary">
                   Clinical Encounter Record — {selectedEncounter.patientName}
                 </h2>
-                <p className="text-xs text-ink-tertiary mt-0.5">
+                <p className="text-xs text-ink-secondary mt-0.5">
                   {selectedEncounter.opdToken} · {selectedEncounter.visitDate}
                 </p>
               </div>
-              <button className="text-ink-tertiary hover:text-ink-primary p-1 text-sm rounded transition-colors" onClick={() => setSelectedEncounter(null)}>✕</button>
+              <button className="text-ink-secondary hover:text-ink-primary p-1 text-sm rounded transition-colors" onClick={() => setSelectedEncounter(null)}>✕</button>
             </div>
             <div className="p-4 space-y-3.5">
-              <div className="p-3 rounded-md bg-dark-sunken border border-dark-rule">
+              <div className="p-3 rounded-md bg-paper-sunken border border-rule">
                 <div className="text-[11px] font-bold text-accent uppercase tracking-wider">Chief Complaint</div>
                 <div className="text-sm text-ink-primary mt-1">{selectedEncounter.chiefComplaint}</div>
               </div>
-              <div className="p-3 rounded-md bg-dark-sunken border border-dark-rule">
+              <div className="p-3 rounded-md bg-paper-sunken border border-rule">
                 <div className="text-[11px] font-bold text-accent uppercase tracking-wider">Doctor Consultation Notes</div>
                 <div className="text-xs text-ink-primary mt-1 leading-relaxed">{selectedEncounter.doctorNotes || 'No notes added.'}</div>
               </div>
               <div className="grid grid-cols-2 gap-2.5">
-                <div className="p-2.5 rounded-md bg-dark-sunken border border-dark-rule text-xs text-ink-secondary">
+                <div className="p-2.5 rounded-md bg-paper-sunken border border-rule text-xs text-ink-secondary">
                   <strong className="text-ink-primary">Prescriptions:</strong> {selectedEncounter.prescriptionsCount} items
                 </div>
-                <div className="p-2.5 rounded-md bg-dark-sunken border border-dark-rule text-xs text-ink-secondary">
+                <div className="p-2.5 rounded-md bg-paper-sunken border border-rule text-xs text-ink-secondary">
                   <strong className="text-ink-primary">Digitized Documents:</strong> {selectedEncounter.documentsCount} files
                 </div>
               </div>
             </div>
-            <div className="p-4 border-t border-dark-rule flex justify-end">
-              <button className="px-4 py-2 text-xs font-semibold rounded-md bg-accent text-dark hover:bg-accent/90 transition-colors" onClick={() => setSelectedEncounter(null)}>
+            <div className="p-4 border-t border-rule flex justify-end">
+              <button className="px-4 py-2 text-xs font-semibold rounded-md bg-accent text-ink-primary hover:bg-accent/90 transition-colors" onClick={() => setSelectedEncounter(null)}>
                 Close Record
               </button>
             </div>

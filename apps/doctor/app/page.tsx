@@ -71,7 +71,7 @@ function riskBadge(risk: string) {
 function rowClass(risk: string) {
   if (risk === 'EMERGENCY')    return 'bg-signal-critical/10 hover:bg-signal-critical/20 border-l-2 border-signal-critical cursor-pointer transition-colors';
   if (risk === 'HIGH_PRIORITY') return 'bg-signal-warning/10 hover:bg-signal-warning/20 border-l-2 border-signal-warning cursor-pointer transition-colors';
-  return 'hover:bg-dark-raised border-l-2 border-transparent cursor-pointer transition-colors';
+  return 'hover:bg-paper border-l-2 border-transparent cursor-pointer transition-colors';
 }
 
 function MediKioskLogo() {
@@ -133,7 +133,7 @@ export default function DoctorPortalPage() {
       }
     } catch {
       // Keep seed queue fallback
-    } fontinally {
+    } finally {
       setIsLoadingQueue(false);
     }
   };
@@ -257,7 +257,7 @@ export default function DoctorPortalPage() {
   // ── Loading screen ──────────────────────────────────────────
   if (!authChecked) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-dark">
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-paper">
         <div className="page-spinner" aria-label="Authenticating…" />
         <p className="text-sm text-ink-muted">Authenticating…</p>
       </div>
@@ -273,23 +273,23 @@ export default function DoctorPortalPage() {
 
   // ── Render ──────────────────────────────────────────────────
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-dark">
+    <div className="flex h-screen w-full overflow-hidden bg-transparent">
       {/* ── Sidebar ── */}
-      <aside className="w-64 flex flex-col border-r border-dark-rule bg-dark-raised flex-shrink-0" role="navigation" aria-label="Doctor portal navigation">
+      <aside className="w-64 flex flex-col border-r border-rule bg-paper flex-shrink-0" role="navigation" aria-label="Doctor portal navigation">
         {/* Logo */}
-        <div className="flex items-center gap-3 p-5 border-b border-dark-rule">
+        <div className="flex items-center gap-3 p-5 border-b border-rule">
           <div className="text-accent" aria-hidden="true">
             <MediKioskLogo />
           </div>
           <div>
-            <div className="font-semibold text-ink-primary tracking-tight text-lg">MediKiosk</div>
-            <div className="text-xs text-ink-tertiary">Doctor Portal</div>
+            <div className="font-semibold text-ink-onDark tracking-tight text-lg">MediKiosk</div>
+            <div className="text-xs text-ink-onDarkMuted">Doctor Portal</div>
           </div>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1">
-          <div className="text-xs font-semibold uppercase tracking-wider text-ink-muted mt-5 mb-2 px-3">OPD</div>
+          <div className="text-[12px] font-semibold uppercase tracking-wide text-ink-onDarkMuted mt-5 mb-2 px-3">OPD</div>
           <Link href="/" passHref legacyBehavior><NavItem active aria-current="page"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M2 6h12M2 10h12M6 2v12M10 2v12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
             </svg>
@@ -305,7 +305,7 @@ export default function DoctorPortalPage() {
             </svg>
             Past Encounters</NavItem></Link>
 
-          <div className="text-xs font-semibold uppercase tracking-wider text-ink-muted mt-5 mb-2 px-3">Portals</div>
+          <div className="text-[12px] font-semibold uppercase tracking-wide text-ink-onDarkMuted mt-5 mb-2 px-3">Portals</div>
           <NavItem href="http://localhost:3000" target="_blank" rel="noopener noreferrer"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
               <path d="M5 13v2M11 13v2M3 15h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
@@ -318,13 +318,13 @@ export default function DoctorPortalPage() {
         </nav>
 
         {/* User section */}
-        <div className="p-4 border-t border-dark-rule flex flex-col gap-3">
+        <div className="p-4 border-t border-rule flex flex-col gap-3">
           {user && (
-            <div className="flex items-center gap-3 p-3 bg-dark-sunken rounded-lg border border-dark-rule">
+            <div className="flex items-center gap-3 p-3 bg-paper-sunken rounded-lg border border-rule">
               <div className="w-9 h-9 rounded-full bg-accent-wash text-accent flex items-center justify-center font-bold text-sm border border-accent/20" aria-hidden="true">{initials}</div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold truncate text-ink-primary">{user.fullName}</div>
-                <div className="text-xs text-ink-tertiary truncate uppercase tracking-wider font-medium">{user.role}</div>
+                <div className="text-sm font-semibold truncate text-ink-onDark">{user.fullName}</div>
+                <div className="text-xs text-ink-onDarkMuted truncate uppercase tracking-wider font-medium">{user.role}</div>
               </div>
             </div>
           )}
@@ -342,24 +342,24 @@ export default function DoctorPortalPage() {
       </aside>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 flex flex-col overflow-hidden bg-dark">
+      <main className="flex-1 flex flex-col overflow-hidden bg-transparent">
         {/* Topbar */}
-        <div className="flex items-center justify-between p-6 border-b border-dark-rule bg-dark-raised flex-shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-rule bg-dark text-ink-onDark flex-shrink-0">
           <div>
-            <h1 className="text-2xl font-semibold text-ink-primary tracking-tight">
+            <h1 className="text-2xl font-serif font-semibold text-ink-onDark tracking-tight">
               {greeting}, Dr. {user?.fullName.split(' ').pop() ?? 'Doctor'}
             </h1>
-            <p className="text-sm text-ink-secondary mt-1">
+            <p className="text-sm text-ink-onDarkMuted mt-1">
               {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               {' · '}OPD Queue
             </p>
           </div>
           <div className="flex items-center gap-5">
-            <div className="flex items-center gap-2 text-xs text-ink-muted">
+            <div className="flex items-center gap-2 text-xs text-ink-onDarkMuted">
               <div className="w-2 h-2 rounded-full bg-signal-success" aria-hidden="true" />
               Realtime
             </div>
-            <span className="text-xs text-ink-muted">{user?.fullName}</span>
+            <span className="text-xs text-ink-onDarkMuted">{user?.fullName}</span>
             <div className="w-9 h-9 rounded-full bg-accent-wash text-accent flex items-center justify-center font-bold text-sm border border-accent/20" aria-hidden="true">{initials}</div>
           </div>
         </div>
@@ -370,15 +370,15 @@ export default function DoctorPortalPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in fade-in">
             <Card className="p-5 flex flex-col gap-2">
               <div className="text-sm text-ink-secondary font-medium">In Queue</div>
-              <div className="text-3xl font-semibold text-ink-primary">{totalWaiting}</div>
+              <div className="text-3xl font-mono font-semibold text-ink-primary rounded-md">{totalWaiting}</div>
             </Card>
             <Card className={`p-5 flex flex-col gap-2 ${emergency > 0 ? 'border-signal-critical' : ''}`}>
               <div className="text-sm text-ink-secondary font-medium">🚨 Emergency</div>
-              <div className={`text-3xl font-semibold ${emergency > 0 ? 'text-signal-critical' : 'text-ink-primary'}`}>{emergency}</div>
+              <div className={`text-3xl font-mono font-semibold rounded-md ${emergency > 0 ? 'text-signal-critical' : 'text-ink-primary'}`}>{emergency}</div>
             </Card>
             <Card className={`p-5 flex flex-col gap-2 ${highPriority > 0 ? 'border-signal-warning' : ''}`}>
               <div className="text-sm text-ink-secondary font-medium">⚠ High Priority</div>
-              <div className={`text-3xl font-semibold ${highPriority > 0 ? 'text-signal-warning' : 'text-ink-primary'}`}>{highPriority}</div>
+              <div className={`text-3xl font-mono font-semibold rounded-md ${highPriority > 0 ? 'text-signal-warning' : 'text-ink-primary'}`}>{highPriority}</div>
             </Card>
             <Card className="p-5 flex flex-col gap-2">
               <div className="text-sm text-ink-secondary font-medium">System Status</div>
@@ -391,7 +391,7 @@ export default function DoctorPortalPage() {
 
           {/* Queue Table */}
           <Card className="flex flex-col animate-in fade-in slide-in-from-bottom-2">
-            <CardHeader className="flex flex-row items-center justify-between border-b border-dark-rule pb-4">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-rule pb-4">
               <CardTitle>Patient OPD Queue</CardTitle>
               <Button variant="ghost" onClick={fetchLiveQueue} disabled={isLoadingQueue} aria-label="Refresh queue">
                 {isLoadingQueue ? (
@@ -412,7 +412,7 @@ export default function DoctorPortalPage() {
 
             <CardContent className="p-0 overflow-x-auto">
               <table className="w-full text-left text-sm" role="table" aria-label="Patient OPD queue">
-                <thead className="border-b border-dark-rule text-ink-muted text-xs uppercase tracking-wider bg-dark-sunken">
+                <thead className="border-b border-rule text-ink-secondary text-[12px] uppercase tracking-wide bg-paper-sunken">
                   <tr>
                     <th scope="col" className="px-4 py-3 font-medium">Token</th>
                     <th scope="col" className="px-4 py-3 font-medium">Patient</th>
@@ -431,28 +431,28 @@ export default function DoctorPortalPage() {
                       onClick={() => openPatientDossier(item)}
                       aria-label={`Open ${item.patient?.first_name} ${item.patient?.last_name} dossier`}
                     >
-                      <td className="px-4 py-3 border-b border-dark-rule">
+                      <td className="px-4 py-3 border-b border-rule">
                         <DataMono>{item.opdToken}</DataMono>
                       </td>
-                      <td className="px-4 py-3 border-b border-dark-rule font-semibold text-ink-primary">
+                      <td className="px-4 py-3 border-b border-rule font-semibold text-ink-primary">
                         {item.patient?.first_name} {item.patient?.last_name}
                       </td>
-                      <td className="px-4 py-3 border-b border-dark-rule text-ink-secondary text-xs">
+                      <td className="px-4 py-3 border-b border-rule text-ink-secondary text-xs">
                         {item.patient?.age ? `${item.patient.age}y` : '—'} / {item.patient?.gender || '—'}
                       </td>
-                      <td className="px-4 py-3 border-b border-dark-rule text-ink-secondary max-w-[260px] truncate text-xs">
+                      <td className="px-4 py-3 border-b border-rule text-ink-secondary max-w-[260px] truncate text-xs">
                         {item.chiefComplaint}
                       </td>
-                      <td className="px-4 py-3 border-b border-dark-rule">{riskBadge(item.riskLevel || 'NORMAL')}</td>
-                      <td className="px-4 py-3 border-b border-dark-rule text-xs text-ink-muted">
+                      <td className="px-4 py-3 border-b border-rule">{riskBadge(item.riskLevel || 'NORMAL')}</td>
+                      <td className="px-4 py-3 border-b border-rule text-xs text-ink-onDarkMuted">
                         {item.summaryStatus === 'CONFIRMED'
                           ? <span className="text-signal-success font-medium">✓ Confirmed</span>
                           : item.summaryStatus
                             ? <span className="inline-flex items-center rounded-md bg-accent-wash px-2 py-0.5 text-xs font-semibold text-accent border border-accent/20">AI Draft</span>
-                            : <span className="text-ink-tertiary">Pending</span>
+                            : <span className="text-ink-secondary">Pending</span>
                         }
                       </td>
-                      <td className="px-4 py-3 border-b border-dark-rule">
+                      <td className="px-4 py-3 border-b border-rule">
                         <Button variant="default"
                           className="py-1 px-3 text-xs"
                           onClick={(e) => { e.stopPropagation(); openPatientDossier(item); }}
@@ -473,15 +473,15 @@ export default function DoctorPortalPage() {
       {/* ── Patient Clinical Dossier Modal ── */}
       {selectedPatient && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-in fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-dark/80 p-4 animate-in fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) setSelectedPatient(null); }}
           role="dialog"
           aria-modal="true"
           aria-label={`Clinical dossier for ${selectedPatient.patient?.first_name} ${selectedPatient.patient?.last_name}`}
         >
-          <div className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-lg bg-dark border border-dark-ruleStrong shadow-raised overflow-hidden animate-in zoom-in-95" role="document">
+          <div className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-lg bg-paper border border-ruleStrong shadow-raised overflow-hidden animate-in zoom-in-95" role="document">
             {/* Modal Header */}
-            <div className="flex items-start justify-between p-6 border-b border-dark-rule bg-dark-raised">
+            <div className="flex items-start justify-between p-6 border-b border-rule bg-dark text-ink-onDark">
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl font-bold tracking-tight text-ink-primary">
@@ -489,7 +489,7 @@ export default function DoctorPortalPage() {
                   </span>
                   {riskBadge(selectedPatient.riskLevel)}
                 </div>
-                <p className="text-xs text-ink-muted">
+                <p className="text-xs text-ink-onDarkMuted">
                   Age: {selectedPatient.patient?.age || '—'} &nbsp;·&nbsp;
                   {selectedPatient.patient?.gender || '—'} &nbsp;·&nbsp;
                   Token: <strong className="text-accent">{selectedPatient.opdToken}</strong> &nbsp;·&nbsp;
@@ -506,10 +506,10 @@ export default function DoctorPortalPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8 bg-dark">
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8 bg-paper">
               {/* Success message */}
               {reviewSuccessMsg && (
-                <div className="flex items-center gap-2 p-4 bg-signal-success/10 border border-signal-success/20 text-signal-success rounded-md text-sm font-medium" role="status">
+                <div className="flex items-center gap-2 p-3 rounded-md bg-accent-wash text-ink-primary text-sm font-medium" role="status">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <path d="M3 8l4 4 6-7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -520,7 +520,7 @@ export default function DoctorPortalPage() {
               {/* Loading dossier */}
               {isLoadingDossier ? (
                 <div className="flex items-center gap-3.5 p-4">
-                  <div className="w-7 h-7 border-2 border-dark-rule border-t-accent rounded-full animate-spin" />
+                  <div className="w-7 h-7 border-2 border-rule border-t-accent rounded-full animate-spin" />
                   <span className="text-sm text-ink-muted">Loading clinical dossier…</span>
                 </div>
               ) : (
@@ -528,14 +528,14 @@ export default function DoctorPortalPage() {
                   {/* AI Generated Banner */}
                   <div className="p-3 bg-accent-wash border border-accent/20 rounded-lg flex items-center gap-2.5">
                     <span className="inline-flex items-center rounded-md bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent border border-accent/20">AI Generated</span>
-                    <span className="text-xs text-ink-muted">
+                    <span className="text-xs text-ink-onDarkMuted">
                       AI-generated fields are suggestions. Review, edit, and confirm before saving.
                     </span>
                   </div>
 
                   {/* Chief Complaint */}
                   <div>
-                    <label className="block text-xs font-semibold text-ink-secondary mb-2 uppercase tracking-wider" htmlFor="doc-chief-complaint">
+                    <label className="block text-[12px] font-semibold text-ink-secondary mb-2 uppercase tracking-wide" htmlFor="doc-chief-complaint">
                       Chief Complaint Summary
                     </label>
                     <Input id="doc-chief-complaint" type="text" 
@@ -547,10 +547,10 @@ export default function DoctorPortalPage() {
 
                   {/* HPI Narrative */}
                   <div>
-                    <label className="block text-xs font-semibold text-ink-secondary mb-2 uppercase tracking-wider" htmlFor="doc-hpi">
+                    <label className="block text-[12px] font-semibold text-ink-secondary mb-2 uppercase tracking-wide" htmlFor="doc-hpi">
                       History of Present Illness (AI Narrative)
                     </label>
-                    <textarea id="doc-hpi" className="flex w-full rounded-md border border-dark-rule bg-dark-sunken px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent resize-y" 
+                    <textarea id="doc-hpi" className="flex w-full rounded-md border border-rule bg-paper-sunken px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent resize-y" 
                       rows={4}
                       value={hpiEdit}
                       onChange={(e) => setHpiEdit(e.target.value)}
@@ -561,7 +561,7 @@ export default function DoctorPortalPage() {
                   {/* Past History + Medications */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                      <label className="block text-xs font-semibold text-ink-secondary mb-2 uppercase tracking-wider" htmlFor="doc-past-history">Past Medical History</label>
+                      <label className="block text-[12px] font-semibold text-ink-secondary mb-2 uppercase tracking-wide" htmlFor="doc-past-history">Past Medical History</label>
                       <Input id="doc-past-history" type="text" 
                         value={pastHistoryEdit}
                         onChange={(e) => setPastHistoryEdit(e.target.value)}
@@ -569,7 +569,7 @@ export default function DoctorPortalPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-ink-secondary mb-2 uppercase tracking-wider" htmlFor="doc-medications">Active Medications</label>
+                      <label className="block text-[12px] font-semibold text-ink-secondary mb-2 uppercase tracking-wide" htmlFor="doc-medications">Active Medications</label>
                       <Input id="doc-medications" type="text" 
                         value={medicationsEdit}
                         onChange={(e) => setMedicationsEdit(e.target.value)}
@@ -580,10 +580,10 @@ export default function DoctorPortalPage() {
 
                   {/* Doctor Notes */}
                   <div>
-                    <label className="block text-xs font-semibold text-ink-secondary mb-2 uppercase tracking-wider" htmlFor="doc-notes">
+                    <label className="block text-[12px] font-semibold text-ink-secondary mb-2 uppercase tracking-wide" htmlFor="doc-notes">
                       Physician Examination Notes & Prescription
                     </label>
-                    <textarea id="doc-notes" className="flex w-full rounded-md border border-dark-rule bg-dark-sunken px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent resize-y" 
+                    <textarea id="doc-notes" className="flex w-full rounded-md border border-rule bg-paper-sunken px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent resize-y" 
                       rows={3}
                       placeholder="Enter examination findings, prescription, and follow-up advice…"
                       value={doctorNotes}
@@ -595,7 +595,7 @@ export default function DoctorPortalPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-between p-6 border-t border-dark-rule bg-dark-raised">
+            <div className="flex items-center justify-between p-6 border-t border-rule bg-paper">
               {/* Integration buttons */}
               <div className="flex gap-2.5">
                 <Button variant="outline" onClick={handlePushToAbdm} aria-label="Push record to ABDM">

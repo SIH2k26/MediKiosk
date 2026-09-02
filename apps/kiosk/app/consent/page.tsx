@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../lib/api-client';
 import { speak, stopSpeaking } from '../../lib/i18n';
 import { Button } from '../../components/ui/button';
@@ -31,7 +32,7 @@ const FALLBACK_CONSENT: Record<string, ConsentDoc> = {
 
 function MediKioskLogo() {
   return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
       <path d="M10 2L18 7V13L10 18L2 13V7L10 2Z" stroke="currentColor" strokeWidth="1.5" fill="none" />
       <path d="M7 10h6M10 7v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
@@ -140,122 +141,132 @@ export default function ConsentPage() {
     router.push('/');
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.4, staggerChildren: 0.1 } }
+  };
+
   return (
-    <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-dark text-ink-primary">
-      {/* ── Compact Header ── */}
-      <header
-        className="h-14 px-6 flex items-center justify-between border-b border-dark-rule bg-dark shrink-0"
-        role="banner"
-      >
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-7 h-7 bg-accent rounded-md flex items-center justify-center text-dark"
-            aria-hidden="true"
-          >
+    <div className="flex flex-col h-screen overflow-hidden bg-paper text-ink-primary">
+      {/* ── Header ── */}
+      <header className="h-16 px-8 flex items-center justify-between border-b border-rule bg-paper shrink-0" role="banner">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-accent rounded flex items-center justify-center text-ink-primary" aria-hidden="true">
             <MediKioskLogo />
           </div>
-          <div>
-            <span className="font-sans text-[15px] font-bold">MediKiosk</span>
-            <span className="text-[11px] text-ink-muted ml-2">AI Clinical Intake</span>
+          <div className="flex items-baseline gap-2">
+            <span className="font-sans text-[17px] font-bold text-ink-primary">MediKiosk</span>
+            <span className="font-mono text-[12px] uppercase tracking-wide text-ink-tertiary">Clinical Intake</span>
           </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1" role="progressbar" aria-label="Step 3 of 5" aria-valuenow={3} aria-valuemin={1} aria-valuemax={5}>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1.5" role="progressbar" aria-label="Step 2 of 5" aria-valuenow={2} aria-valuemin={1} aria-valuemax={5}>
             {[1, 2, 3, 4, 5].map(step => (
               <span
                 key={step}
-                className={`h-1.5 rounded-full transition-all duration-200 ${
-                  step === 3 ? 'w-5 bg-accent' : step < 3 ? 'w-1.5 bg-accent/40' : 'w-1.5 bg-dark-ruleStrong'
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  step === 2 ? 'w-8 bg-accent' : step < 2 ? 'w-2 bg-accent/40' : 'w-2 bg-paper-raised'
                 }`}
                 aria-hidden="true"
               />
             ))}
           </div>
-          <span className="text-[11px] text-ink-muted font-semibold">3 / 5</span>
+          <span className="font-mono text-[12px] tracking-wide text-ink-tertiary">2 / 5</span>
         </div>
       </header>
 
       {/* ── Main Viewport Content ── */}
-      <main className="flex-1 flex flex-col justify-between max-w-[740px] w-full mx-auto px-5 py-4 box-border overflow-hidden">
-        {/* Error message */}
-        {errorMsg && (
-          <div className="px-4 py-3 bg-signal-critical border border-signal-critical text-signal-critical rounded-lg text-sm flex items-center gap-2" role="alert">
-            <span>⚠️</span> {errorMsg}
-          </div>
-        )}
+      <main className="flex-1 overflow-y-auto px-6 py-10 flex flex-col items-center justify-center">
+        <div className="max-w-[800px] w-full flex flex-col gap-6">
+          <AnimatePresence mode="wait">
+            {errorMsg && (
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="px-5 py-4 bg-signal-critical/10 border border-signal-critical text-signal-critical rounded-lg text-sm flex items-center gap-3 font-medium">
+                <span className="text-lg">⚠️</span> {errorMsg}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        {/* Consent Card */}
-        <div className="bg-dark-raised border border-dark-rule rounded-2xl p-5 flex flex-col gap-3">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="font-sans text-xl font-bold m-0">
+          <motion.div variants={containerVariants} initial="hidden" animate="show" className="w-full">
+            <div className="text-center flex flex-col gap-3 mb-10">
+              <div className="font-mono text-[12px] uppercase tracking-widest text-accent">
+                {translate('PATIENT AGREEMENT', 'मरीज़ की सहमति')}
+              </div>
+              <h1 className="font-serif text-[42px] leading-tight text-ink-primary">
                 {consentDoc?.title || translate('Consent Form', 'सहमति पत्र')}
               </h1>
-              <p className="text-[11px] text-ink-muted mt-0.5 mb-0">
-                {translate('Document version', 'दस्तावेज़ संस्करण')}: {consentDoc?.version || '1.0'}
+              <p className="font-sans text-[16px] text-ink-secondary m-0">
+                {translate('Please review and accept to proceed with your clinical intake.', 'कृपया नैदानिक जानकारी लेने के लिए समीक्षा करें और स्वीकार करें।')}
               </p>
             </div>
 
-            <Button
-              onClick={toggleAudio}
-              variant="outline"
-              disabled={!consentDoc}
-              className={`h-8.5 px-3 text-xs rounded-full ${
-                isAudioPlaying ? 'bg-accent/15 border-accent text-accent' : ''
-              }`}
-            >
-              🔊 {isAudioPlaying ? translate('Stop Audio', 'रोकें') : translate('Listen to Consent', 'ऑडियो सुनें')}
-            </Button>
-          </div>
+            <div className="bg-paper-raised border-2 border-rule shadow-card rounded-3xl p-8 flex flex-col gap-6 w-full">
+              <div className="flex justify-between items-center border-b border-rule pb-4">
+                <span className="font-mono text-[12px] text-ink-secondary uppercase tracking-wider">
+                  {translate('Document version', 'दस्तावेज़ संस्करण')}: {consentDoc?.version || '1.0'}
+                </span>
+                <Button
+                  onClick={toggleAudio}
+                  variant="outline"
+                  disabled={!consentDoc}
+                  className={`h-12 px-6 font-bold rounded-xl ${
+                    isAudioPlaying ? 'bg-accent/15 border-accent text-accent shadow-raised' : ''
+                  }`}
+                >
+                  <span className="text-lg mr-2">🔊</span> {isAudioPlaying ? translate('Stop Audio', 'रोकें') : translate('Listen to Consent', 'ऑडियो सुनें')}
+                </Button>
+              </div>
 
-          {/* Consent Body */}
-          <div className="max-h-[160px] overflow-y-auto border border-dark-rule rounded-lg p-3 bg-black/25 text-[13px] leading-relaxed text-ink-secondary">
-            {consentDoc ? consentDoc.body : translate('Loading consent document…', 'सहमति पत्र लोड हो रहा है…')}
-          </div>
+              {/* Consent Body */}
+              <div className="max-h-[250px] overflow-y-auto border-2 border-rule rounded-xl p-6 bg-paper-sunken font-sans text-[16px] leading-relaxed text-ink-primary">
+                {consentDoc ? consentDoc.body : translate('Loading consent document…', 'सहमति पत्र लोड हो रहा है…')}
+              </div>
 
-          {/* Checkbox agreement */}
-          <div
-            onClick={() => setIsChecked(!isChecked)}
-            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-[10px] cursor-pointer select-none transition-all duration-150 border-2 ${
-              isChecked ? 'bg-accent/10 border-accent' : 'bg-white/5 border-dark-rule'
-            }`}
-          >
-            <div
-              className={`w-5 h-5 rounded border-2 flex items-center justify-center text-dark text-xs font-extrabold shrink-0 ${
-                isChecked ? 'border-accent bg-accent' : 'border-white/30 bg-transparent'
-              }`}
-            >
-              {isChecked && '✓'}
+              {/* Checkbox agreement */}
+              <motion.div
+                whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                onClick={() => setIsChecked(!isChecked)}
+                className={`flex items-center gap-4 p-6 rounded-2xl cursor-pointer select-none transition-all border-2 ${
+                  isChecked ? 'bg-accent-wash border-accent shadow-raised' : 'bg-paper-sunken border-rule hover:border-accent/50 hover:shadow-raised'
+                }`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center text-ink-primary font-extrabold shrink-0 transition-colors ${
+                    isChecked ? 'border-accent bg-accent' : 'border-rule bg-transparent'
+                  }`}
+                >
+                  {isChecked && <span className="text-xl">✓</span>}
+                </div>
+                <p className={`font-sans text-[18px] m-0 font-bold ${isChecked ? 'text-accent' : 'text-ink-primary'}`}>
+                  {translate('I understand and grant clinical intake consent.', 'मैं समझता/समझती हूँ और सहमति देता/देती हूँ।')}
+                </p>
+              </motion.div>
             </div>
-            <p className="text-[12.5px] text-ink-primary m-0 leading-snug font-medium">
-              <strong>{translate('I understand and grant clinical intake consent.', 'मैं समझता/समझती हूँ और सहमति देता/देती हूँ।')}</strong>
-            </p>
-          </div>
-        </div>
 
-        {/* Actions Row */}
-        <div className="flex gap-2.5 mt-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleDecline}
-            disabled={isLoading}
-            className="flex-1 h-11"
-          >
-            {translate('Decline & Exit', 'अस्वीकार करें')}
-          </Button>
-          <Button
-            type="button"
-            variant="default"
-            onClick={handleGrantConsent}
-            disabled={!isChecked || isLoading}
-            className="flex-[2] h-11"
-          >
-            {isLoading ? translate('Processing…', 'प्रक्रिया जारी…') : translate('Confirm & Continue →', 'सहमति दें और आगे बढ़ें →')}
-          </Button>
+            {/* Actions Row */}
+            <div className="flex gap-4 mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleDecline}
+                disabled={isLoading}
+                className="flex-1 h-16 font-bold text-lg"
+              >
+                {translate('Decline & Exit', 'अस्वीकार करें')}
+              </Button>
+              <Button
+                type="button"
+                variant="default"
+                onClick={handleGrantConsent}
+                disabled={!isChecked || isLoading}
+                className="flex-[2] h-16 font-bold shadow-raised text-lg"
+              >
+                {isLoading ? translate('Processing…', 'प्रक्रिया जारी…') : translate('Confirm & Continue →', 'सहमति दें और आगे बढ़ें →')}
+              </Button>
+            </div>
+          </motion.div>
         </div>
       </main>
     </div>
   );
 }
+

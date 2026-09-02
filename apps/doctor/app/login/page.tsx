@@ -94,18 +94,18 @@ export default function DoctorLoginPage() {
 
   if (checkingSession) {
     return (
-      <div className="min-h-screen bg-dark flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-page flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" aria-label="Checking session…" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-dark text-ink-primary flex items-center justify-center p-4" role="main">
-      <div className="w-full max-w-[460px] bg-dark-raised border border-dark-rule rounded-lg shadow-card p-6">
+    <div className="min-h-screen bg-paper text-ink-primary flex items-center justify-center p-4" role="main">
+      <div className="w-full max-w-[460px] bg-paper border border-rule rounded-lg shadow-card p-6">
         {/* Header Logo */}
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-md bg-accent-wash border border-dark-rule flex items-center justify-center shrink-0" aria-hidden="true">
+          <div className="w-10 h-10 rounded-md bg-accent-wash border border-rule flex items-center justify-center shrink-0" aria-hidden="true">
             <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
               <path d="M14 3L25 9.5V18.5L14 25L3 18.5V9.5L14 3Z" className="stroke-accent" strokeWidth="1.5" fill="none" />
               <path d="M14 10V18M10 14H18" className="stroke-accent" strokeWidth="2.5" strokeLinecap="round" />
@@ -113,19 +113,19 @@ export default function DoctorLoginPage() {
           </div>
           <div>
             <div className="text-base font-bold text-ink-primary tracking-tight">MediKiosk</div>
-            <div className="text-[11px] font-medium text-ink-tertiary">Doctor Clinical Cockpit</div>
+            <div className="text-[11px] font-medium text-ink-secondary">Doctor Clinical Cockpit</div>
           </div>
         </div>
 
         {/* Tab Toggle */}
-        <div className="flex gap-1 bg-dark-sunken border border-dark-rule p-1 rounded-md mb-5">
+        <div className="flex gap-1 bg-paper-sunken border border-rule p-1 rounded-md mb-5">
           <button
             type="button"
             onClick={() => { setMode('LOGIN'); setError(null); }}
             className={`flex-1 h-8 rounded text-xs font-bold transition-all ${
               mode === 'LOGIN'
-                ? 'bg-accent text-dark shadow-sm'
-                : 'text-ink-tertiary hover:text-ink-primary bg-transparent'
+                ? 'bg-accent text-ink-primary shadow-sm'
+                : 'text-ink-secondary hover:text-ink-primary bg-transparent'
             }`}
           >
             Sign In
@@ -135,8 +135,8 @@ export default function DoctorLoginPage() {
             onClick={() => { setMode('REGISTER'); setError(null); }}
             className={`flex-1 h-8 rounded text-xs font-bold transition-all ${
               mode === 'REGISTER'
-                ? 'bg-accent text-dark shadow-sm'
-                : 'text-ink-tertiary hover:text-ink-primary bg-transparent'
+                ? 'bg-accent text-ink-primary shadow-sm'
+                : 'text-ink-secondary hover:text-ink-primary bg-transparent'
             }`}
           >
             Register as Doctor
@@ -145,7 +145,7 @@ export default function DoctorLoginPage() {
 
         {/* Error message */}
         {error && (
-          <div className="p-3 bg-dark-sunken border border-dark-ruleStrong text-signal-critical rounded-md text-xs mb-4 flex items-center gap-2 font-medium" role="alert">
+          <div className="p-3 bg-paper-sunken border border-ruleStrong text-signal-critical rounded-md text-xs mb-4 flex items-center gap-2 font-medium" role="alert">
             <span aria-hidden="true">⚠️</span>
             <span>{error}</span>
           </div>
@@ -164,11 +164,11 @@ export default function DoctorLoginPage() {
                   type="button"
                   onClick={() => handleQuickDemoLogin('dr.sharma@hospital.org')}
                   disabled={isLoading}
-                  className="w-full flex items-center justify-between p-2.5 bg-dark-sunken border border-dark-rule hover:border-accent/40 rounded-md text-left transition-all group disabled:opacity-50"
+                  className="w-full flex items-center justify-between p-2.5 bg-paper-sunken border border-rule hover:border-accent/40 rounded-md text-left transition-all group disabled:opacity-50"
                 >
                   <div>
                     <div className="text-xs font-bold text-ink-primary">👨‍⚕️ Dr. Rajesh Sharma, MD</div>
-                    <div className="text-[11px] text-ink-tertiary">Internal Medicine & Cardiology · OPD Room 4</div>
+                    <div className="text-[11px] text-ink-secondary">Internal Medicine & Cardiology · OPD Room 4</div>
                   </div>
                   <span className="text-xs font-bold text-accent group-hover:translate-x-0.5 transition-transform">Enter →</span>
                 </button>
@@ -177,11 +177,11 @@ export default function DoctorLoginPage() {
                   type="button"
                   onClick={() => handleQuickDemoLogin('dr.priya@hospital.org')}
                   disabled={isLoading}
-                  className="w-full flex items-center justify-between p-2.5 bg-dark-sunken border border-dark-rule hover:border-accent/40 rounded-md text-left transition-all group disabled:opacity-50"
+                  className="w-full flex items-center justify-between p-2.5 bg-paper-sunken border border-rule hover:border-accent/40 rounded-md text-left transition-all group disabled:opacity-50"
                 >
                   <div>
                     <div className="text-xs font-bold text-ink-primary">👩‍⚕️ Dr. Priya Nair, MS</div>
-                    <div className="text-[11px] text-ink-tertiary">Emergency & Triage Specialist · Cockpit 1</div>
+                    <div className="text-[11px] text-ink-secondary">Emergency & Triage Specialist · Cockpit 1</div>
                   </div>
                   <span className="text-xs font-bold text-accent group-hover:translate-x-0.5 transition-transform">Enter →</span>
                 </button>
@@ -189,9 +189,9 @@ export default function DoctorLoginPage() {
             </div>
 
             <div className="flex items-center gap-2 my-4">
-              <div className="flex-1 h-px bg-dark-rule" />
-              <span className="text-[10px] font-semibold text-ink-tertiary uppercase tracking-wider">Or Custom Sign-In</span>
-              <div className="flex-1 h-px bg-dark-rule" />
+              <div className="flex-1 h-px bg-rule" />
+              <span className="text-[10px] font-semibold text-ink-secondary uppercase tracking-wider">Or Custom Sign-In</span>
+              <div className="flex-1 h-px bg-rule" />
             </div>
 
             <form onSubmit={handleLogin} noValidate className="space-y-3">
@@ -200,7 +200,7 @@ export default function DoctorLoginPage() {
                 <input
                   id="doctor-email"
                   type="email"
-                  className="w-full h-9 px-3 bg-dark-sunken border border-dark-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
+                  className="w-full h-9 px-3 bg-paper-sunken border border-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                   placeholder="doctor@hospital.org"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -215,7 +215,7 @@ export default function DoctorLoginPage() {
                   <input
                     id="doctor-password"
                     type={showPassword ? 'text' : 'password'}
-                    className="w-full h-9 pl-3 pr-8 bg-dark-sunken border border-dark-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
+                    className="w-full h-9 pl-3 pr-8 bg-paper-sunken border border-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -224,7 +224,7 @@ export default function DoctorLoginPage() {
                   />
                   <button
                     type="button"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-ink-tertiary hover:text-ink-primary"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-ink-secondary hover:text-ink-primary"
                     onClick={() => setShowPassword((v) => !v)}
                     tabIndex={-1}
                   >
@@ -236,7 +236,7 @@ export default function DoctorLoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-10 mt-2 bg-accent hover:bg-accent/90 text-dark font-bold text-xs rounded-md transition-colors disabled:opacity-50"
+                className="w-full h-10 mt-2 bg-accent hover:bg-accent/90 text-ink-primary font-bold text-xs rounded-md transition-colors disabled:opacity-50"
               >
                 {isLoading ? 'Signing in…' : 'Sign In to OPD Queue →'}
               </button>
@@ -251,7 +251,7 @@ export default function DoctorLoginPage() {
               <label className="block text-xs font-medium text-ink-secondary mb-1">Doctor Full Name *</label>
               <input
                 type="text"
-                className="w-full h-9 px-3 bg-dark-sunken border border-dark-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
+                className="w-full h-9 px-3 bg-paper-sunken border border-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                 placeholder="e.g. Dr. Rajesh Sharma, MD"
                 value={regFullName}
                 onChange={(e) => setRegFullName(e.target.value)}
@@ -264,7 +264,7 @@ export default function DoctorLoginPage() {
               <label className="block text-xs font-medium text-ink-secondary mb-1">Hospital Email Address *</label>
               <input
                 type="email"
-                className="w-full h-9 px-3 bg-dark-sunken border border-dark-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
+                className="w-full h-9 px-3 bg-paper-sunken border border-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                 placeholder="doctor@hospital.org"
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
@@ -278,7 +278,7 @@ export default function DoctorLoginPage() {
                 <label className="block text-xs font-medium text-ink-secondary mb-1">Specialty / Dept</label>
                 <input
                   type="text"
-                  className="w-full h-9 px-3 bg-dark-sunken border border-dark-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
+                  className="w-full h-9 px-3 bg-paper-sunken border border-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                   placeholder="e.g. Cardiology"
                   value={regSpecialty}
                   onChange={(e) => setRegSpecialty(e.target.value)}
@@ -290,7 +290,7 @@ export default function DoctorLoginPage() {
                 <label className="block text-xs font-medium text-ink-secondary mb-1">OPD Room No.</label>
                 <input
                   type="text"
-                  className="w-full h-9 px-3 bg-dark-sunken border border-dark-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
+                  className="w-full h-9 px-3 bg-paper-sunken border border-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                   placeholder="e.g. Room 4"
                   value={regOpdRoom}
                   onChange={(e) => setRegOpdRoom(e.target.value)}
@@ -303,7 +303,7 @@ export default function DoctorLoginPage() {
               <label className="block text-xs font-medium text-ink-secondary mb-1">Password</label>
               <input
                 type="password"
-                className="w-full h-9 px-3 bg-dark-sunken border border-dark-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
+                className="w-full h-9 px-3 bg-paper-sunken border border-rule rounded-md text-xs text-ink-primary placeholder:text-ink-muted focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                 placeholder="Create password"
                 value={regPassword}
                 onChange={(e) => setRegPassword(e.target.value)}
@@ -314,7 +314,7 @@ export default function DoctorLoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full h-10 mt-2 bg-accent hover:bg-accent/90 text-dark font-bold text-xs rounded-md transition-colors disabled:opacity-50"
+              className="w-full h-10 mt-2 bg-accent hover:bg-accent/90 text-ink-primary font-bold text-xs rounded-md transition-colors disabled:opacity-50"
             >
               {isLoading ? 'Creating account…' : 'Register & Enter Portal →'}
             </button>
@@ -324,7 +324,7 @@ export default function DoctorLoginPage() {
         {/* Back link */}
         <a
           href="http://localhost:3000"
-          className="block text-center text-xs font-medium text-ink-tertiary hover:text-accent transition-colors mt-4"
+          className="block text-center text-xs font-medium text-ink-secondary hover:text-accent transition-colors mt-4"
         >
           ← Back to MediKiosk Home
         </a>

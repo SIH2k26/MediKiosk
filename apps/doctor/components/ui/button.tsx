@@ -1,4 +1,4 @@
-﻿import * as React from "react"
+import * as React from "react"
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -16,9 +16,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const baseStyles = "inline-flex items-center justify-center rounded-md font-sans font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50"
     
     const variants = {
-      default: "bg-accent text-dark hover:bg-accent-hover shadow-card",
-      outline: "border border-dark-rule bg-dark-raised text-ink-primary hover:bg-dark-ruleStrong",
-      ghost: "hover:bg-dark-ruleStrong text-ink-primary",
+      default: "bg-gradient-btn text-accent-text hover:opacity-90 shadow-raised border-none",
+      outline: "border border-rule bg-paper text-ink-primary hover:bg-paper-sunken",
+      ghost: "hover:bg-paper text-ink-primary",
       link: "text-accent underline-offset-4 hover:underline",
     }
     
@@ -41,3 +41,5 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button"
 
 export { Button }
+
+

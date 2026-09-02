@@ -17,3 +17,4 @@ function SeverityBadge({ className, severity = "default", ...props }: BadgeProps
   )
 }
 export { SeverityBadge }
+

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../lib/api-client';
 import { aiHistoryApi } from '../../lib/ai-history-shim';
 import { useAudioRecorder } from './hooks/use-audio-recorder';
@@ -278,258 +278,249 @@ export default function HistoryPage() {
     ? SECTION_LABELS[currentSection]?.[language as 'en' | 'hi'] || currentSection
     : t('Clinical Intake', 'प्रवेश साक्षात्कार');
 
+  if (!patient || !session) return null;
+
   return (
-    <div style={{ height: '100vh', maxHeight: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: 'var(--color-surface, #06090E)', color: 'var(--color-text-primary, #F0F4F8)' }}>
-      {/* ── Compact Header ── */}
-      <header
-        style={{
-          height: '56px',
-          padding: '0 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
-          backgroundColor: 'rgba(6, 9, 14, 0.95)',
-          backdropFilter: 'blur(16px)',
-          flexShrink: 0,
-        }}
-        role="banner"
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div
-            style={{
-              width: '28px',
-              height: '28px',
-              backgroundColor: 'var(--color-primary, #00C9B1)',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#06090E',
-            }}
-            aria-hidden="true"
-          >
+    <div className="h-screen w-full flex flex-col bg-paper text-ink-primary overflow-hidden font-sans">
+      <header className="h-20 shrink-0 border-b border-rule bg-paper px-6 md:px-10 flex items-center justify-between z-10">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-accent rounded-lg flex items-center justify-center text-paper shadow-raised">
             <MediKioskLogo />
           </div>
-          <div>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700 }}>MediKiosk</span>
-            <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', marginLeft: '8px' }}>AI Clinical Intake</span>
+          <div className="flex flex-col">
+            <span className="font-sans text-xl font-bold tracking-tight leading-none text-ink-primary">MediKiosk</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-ink-tertiary mt-1">Clinical Intake</span>
           </div>
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ display: 'flex', gap: '4px' }} role="progressbar" aria-label="Step 4 of 5" aria-valuenow={4} aria-valuemin={1} aria-valuemax={5}>
-            {[1, 2, 3, 4, 5].map(step => (
-              <span
-                key={step}
-                style={{
-                  width: step === 4 ? '20px' : '6px',
-                  height: '6px',
-                  borderRadius: '9999px',
-                  backgroundColor: step === 4 ? 'var(--color-primary, #00C9B1)' : step < 4 ? 'rgba(0, 201, 177, 0.4)' : 'rgba(255, 255, 255, 0.15)',
-                  transition: 'all 200ms ease',
-                }}
-                aria-hidden="true"
+        
+        <div className="flex items-center gap-6">
+          <div className="hidden md:flex flex-col items-end mr-4">
+            <span className="text-xs font-mono font-bold text-ink-secondary mb-1">
+              {String(Math.min(answeredCount + 1, visibleQuestions.length)).padStart(2, '0')} / {String(visibleQuestions.length).padStart(2, '0')}
+            </span>
+            <div className="w-32 h-1.5 bg-paper-raised rounded-full overflow-hidden border border-rule">
+              <motion.div 
+                className="h-full bg-accent rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPercent}%` }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
               />
-            ))}
+            </div>
           </div>
-          <span style={{ fontSize: '11px', color: 'rgba(240, 244, 248, 0.4)', fontWeight: 600 }}>4 / 5</span>
+          <button 
+            className="text-xs font-bold text-signal-critical hover:bg-signal-criticalWash px-4 py-2 rounded-lg transition-colors"
+            onClick={() => {
+              if(confirm(t('End session?', 'क्या आप सत्र समाप्त करना चाहते हैं?'))) router.push('/start');
+            }}
+          >
+            {t('End', 'समाप्त करें')}
+          </button>
         </div>
       </header>
 
-      {/* ── Main Viewport Content ── */}
-      <main
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          maxWidth: '740px',
-          width: '100%',
-          margin: '0 auto',
-          padding: '12px 20px 14px',
-          boxSizing: 'border-box',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Red Flags Banner */}
-        {redFlags.length > 0 && (
-          <div style={{ backgroundColor: 'rgba(239,68,68,0.12)', border: '1px solid #EF4444', borderRadius: '10px', padding: '8px 14px', marginBottom: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#FCA5A5', fontWeight: 700, fontSize: '12px' }}>
-              <span>🚨</span> {t('Triage Signal Detected', 'आपातकालीन लक्षण दर्ज')}
-            </div>
-          </div>
-        )}
-
-        {/* Error message */}
-        {errorMsg && (
-          <div className="alert alert-error" style={{ margin: '4px 0 8px' }}>
-            <span>⚠️</span> {errorMsg}
-          </div>
-        )}
-
-        {/* Progress & Section Sub-header */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(240, 244, 248, 0.8)' }}>
-              📋 {sectionLabel}
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              {/* Input mode toggles */}
-              <div style={{ display: 'flex', gap: '4px', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '8px', padding: '2px' }}>
-                <button
-                  className={`btn ${inputMode === 'TOUCH' ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => setInputMode('TOUCH')}
-                  style={{ padding: '3px 8px', fontSize: '11px', height: '26px', minHeight: 'unset' }}
-                >
-                  👆 {t('Touch', 'टच')}
-                </button>
-                <button
-                  className={`btn ${inputMode === 'VOICE' ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => setInputMode('VOICE')}
-                  style={{ padding: '3px 8px', fontSize: '11px', height: '26px', minHeight: 'unset' }}
-                >
-                  🎤 {t('Voice', 'बोलें')}
-                </button>
-                <button
-                  className={`btn ${inputMode === 'TEXT' ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => setInputMode('TEXT')}
-                  style={{ padding: '3px 8px', fontSize: '11px', height: '26px', minHeight: 'unset' }}
-                >
-                  ⌨️ {t('Type', 'लिखें')}
-                </button>
-              </div>
-
-              <span style={{ fontSize: '12px', color: 'rgba(240, 244, 248, 0.4)', fontWeight: 600 }}>
-                {answeredCount} / {visibleQuestions.length}
-              </span>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div style={{ height: '4px', borderRadius: '9999px', backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden', marginBottom: '10px' }}>
-            <div style={{ width: `${progressPercent}%`, height: '100%', backgroundColor: 'var(--color-primary, #00C9B1)', transition: 'width 250ms ease' }} />
-          </div>
-        </div>
-
-        {/* Finishing state */}
-        {isFinishing && (
-          <div style={{ textAlign: 'center', padding: '24px', backgroundColor: 'rgba(13,18,25,0.9)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>✅</div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: '#10B981', margin: '0 0 4px 0' }}>
-              {t('Intake Recorded!', 'जानकारी दर्ज हो गई!')}
-            </h2>
-            <p style={{ fontSize: '13px', color: 'rgba(240, 244, 248, 0.6)', margin: 0 }}>
-              {t('Proceeding to document scan & OPD token…', 'दस्तावेज़ स्कैन और टोकन की ओर बढ़ रहे हैं…')}
-            </p>
-          </div>
-        )}
-
-        {/* Active Question Render */}
-        {historyId && currentQuestion && !isFinishing && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            {inputMode === 'TOUCH' && (
-              <QuestionRenderer
-                question={currentQuestion}
-                language={language}
-                onAnswer={(val) => handleAnswer(val, 'TOUCH')}
-                disabled={isSaving}
-              />
-            )}
-
-            {inputMode === 'VOICE' && (
-              <div style={{ textAlign: 'center', backgroundColor: 'rgba(13,18,25,0.9)', borderRadius: '16px', padding: '20px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 700, margin: '0 0 6px 0' }}>
-                  {language === 'hi' ? currentQuestion.text.hi : currentQuestion.text.en}
+      <div className="flex-1 flex flex-col md:flex-row min-h-0 relative">
+        <main className="flex-1 relative flex flex-col overflow-y-auto">
+          <AnimatePresence mode="wait">
+            {isFinishing ? (
+              <motion.div
+                key="finishing"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex-1 flex flex-col items-center justify-center text-center px-6"
+              >
+                <div className="w-24 h-24 bg-accent/10 rounded-full flex items-center justify-center mb-8">
+                  <span className="text-5xl text-accent">&#10003;</span>
+                </div>
+                <h2 className="font-serif text-4xl md:text-5xl font-bold text-ink-primary mb-4">
+                  {t('Intake Recorded Successfully', 'आपका विवरण सफलतापूर्वक दर्ज हो गया है')}
                 </h2>
-                <p style={{ fontSize: '12.5px', color: 'rgba(240, 244, 248, 0.6)', margin: '0 0 16px 0' }}>
-                  {t('Tap the microphone and speak your answer clearly.', 'माइक्रोफ़ोन दबाएं और अपना उत्तर बोलें।')}
+                <p className="font-sans text-xl text-ink-secondary max-w-lg">
+                  {t('Proceeding to document scan & OPD token...', 'दस्तावेज़ स्कैन और ओपीडी टोकन की ओर बढ़ रहे हैं...')}
                 </p>
-
-                {audioStatus === 'IDLE' && (
-                  <button className="btn btn-primary" onClick={handleStartVoiceRecording} disabled={isSaving} style={{ height: '48px', padding: '0 24px', fontSize: '15px' }}>
-                    <span>🎤</span> {t('Tap to Speak', 'बोलने के लिए दबाएं')}
-                  </button>
+              </motion.div>
+            ) : currentQuestion ? (
+              <motion.div 
+                key={currentQuestion.id + inputMode}
+                initial={{ opacity: 0, filter: 'blur(10px)', y: 20 }}
+                animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
+                exit={{ opacity: 0, filter: 'blur(10px)', y: -20 }}
+                transition={{ duration: 0.4 }}
+                className="flex-1 flex flex-col items-center justify-center w-full max-w-5xl mx-auto px-6 py-12"
+              >
+                
+                {inputMode === 'TOUCH' && (
+                  <QuestionRenderer
+                    question={currentQuestion}
+                    language={language}
+                    onAnswer={(val) => handleAnswer(val, 'TOUCH')}
+                    disabled={isSaving}
+                  />
                 )}
 
-                {audioStatus === 'RECORDING' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                    <motion.button 
-                      className="btn" 
-                      onClick={handleStopVoiceRecording} 
-                      style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#EF4444', color: '#fff', fontSize: '24px' }}
-                      animate={{ boxShadow: ["0 0 0px 0px rgba(20,201,165,0)", "0 0 0px 10px rgba(20,201,165,0.2)", "0 0 0px 20px rgba(20,201,165,0)"] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
+                {inputMode === 'VOICE' && (
+                  <div className="w-full flex flex-col items-center justify-center max-w-4xl">
+                    <h2 className="font-serif text-[40px] md:text-[56px] leading-tight font-bold text-ink-primary mb-12 text-center tracking-tight">
+                      {language === 'hi' ? currentQuestion.text.hi : currentQuestion.text.en}
+                    </h2>
+                    
+                    {audioStatus === 'IDLE' && (
+                      <motion.button 
+                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                        className="inline-flex items-center gap-4 px-12 h-24 bg-accent text-paper rounded-full font-bold text-2xl shadow-card transition-all" 
+                        onClick={handleStartVoiceRecording} disabled={isSaving}
+                      >
+                        <span className="text-4xl">&#127897;</span> {t('Tap to Speak', 'बोलने के लिए टैप करें')}
+                      </motion.button>
+                    )}
+
+                    {audioStatus === 'RECORDING' && (
+                      <div className="flex flex-col items-center gap-10">
+                        <motion.button 
+                          className="w-32 h-32 rounded-full bg-signal-critical text-paper text-5xl shadow-card flex items-center justify-center relative" 
+                          onClick={handleStopVoiceRecording} 
+                        >
+                          <motion.div 
+                            className="absolute inset-0 rounded-full border-4 border-signal-critical"
+                            animate={{ scale: [1, 1.5, 1], opacity: [1, 0, 1] }}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                          />
+                          &#9632;
+                        </motion.button>
+                        <div className="text-signal-critical font-bold text-2xl tracking-tight">
+                          {t('Listening... Tap to stop', 'सुन रहा हूँ... रोकने के लिए टैप करें')}
+                        </div>
+                        <div className="flex items-center justify-center gap-1.5 h-16 w-80 bg-paper-sunken rounded-2xl px-6 border border-rule">
+                           {[...Array(24)].map((_, i) => (
+                             <motion.div
+                               key={i}
+                               className="w-2 bg-signal-critical rounded-full"
+                               animate={{ height: `${Math.max(4, Math.random() * volume * 100)}%` }}
+                               transition={{ duration: 0.1 }}
+                             />
+                           ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {audioStatus === 'TRANSCRIBING' && (
+                      <div className="py-16 flex flex-col items-center gap-6">
+                        <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+                        <p className="font-mono text-xl text-ink-secondary tracking-widest uppercase">
+                          {t('Transcribing speech...', 'ऑडियो प्रोसेस हो रहा है...')}
+                        </p>
+                      </div>
+                    )}
+
+                    {audioStatus === 'REVIEW' && (
+                      <div className="flex flex-col items-center gap-8 w-full max-w-3xl">
+                        <div className="w-full p-8 bg-paper-sunken border border-rule rounded-3xl font-sans text-3xl text-ink-primary shadow-inner text-center leading-relaxed">
+                          "{transcript}"
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                          <button className="px-10 h-16 bg-paper-raised border border-rule rounded-2xl font-bold text-ink-primary text-xl hover:border-accent hover:shadow-card transition-all" onClick={() => setAudioStatus('IDLE')}>
+                            {t('Try Again', 'पुनः प्रयास करें')}
+                          </button>
+                          <button className="px-10 h-16 bg-accent text-paper rounded-2xl font-bold text-xl shadow-raised flex items-center justify-center gap-2 hover:scale-105 transition-transform" onClick={handleAcceptVoice}>
+                            {t('Accept & Continue', 'स्वीकार करें और आगे बढ़ें')} &rarr;
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {inputMode === 'TEXT' && (
+                  <div className="w-full flex flex-col items-center justify-center max-w-4xl">
+                    <h2 className="font-serif text-[40px] md:text-[56px] leading-tight font-bold text-ink-primary mb-12 text-center tracking-tight">
+                      {language === 'hi' ? currentQuestion.text.hi : currentQuestion.text.en}
+                    </h2>
+                    <form 
+                      onSubmit={handleTextSubmit} 
+                      className="w-full flex flex-col gap-6"
                     >
-                      🎙️
-                    </motion.button>
-                    <div style={{ color: '#EF4444', fontWeight: 600, fontSize: '13px' }}>
-                      {t('Listening… Tap to stop', 'सुन रहे हैं… रोकने के लिए दबाएं')}
-                    </div>
-                    <div style={{ width: '160px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ width: `${Math.min(100, volume * 2)}%`, height: '100%', background: '#EF4444', transition: 'width 0.1s' }} />
-                    </div>
-                  </div>
-                )}
-
-                {audioStatus === 'TRANSCRIBING' && (
-                  <div>
-                    <p style={{ fontSize: '13px', color: 'rgba(240, 244, 248, 0.6)' }}>
-                      {t('Transcribing speech…', 'अनुवाद हो रहा है…')}
-                    </p>
-                  </div>
-                )}
-
-                {audioStatus === 'REVIEW' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
-                    <div style={{ padding: '10px 14px', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: '8px', fontSize: '14px' }}>
-                      "{transcript}"
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <button className="btn btn-secondary" onClick={() => setAudioStatus('IDLE')} style={{ height: '36px' }}>
-                        {t('Try Again', 'पुनः प्रयास')}
+                      <input
+                        type="text"
+                        className="w-full h-24 bg-paper-sunken border-2 border-rule rounded-2xl px-8 text-2xl font-sans text-ink-primary focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder:text-ink-muted shadow-inner"
+                        placeholder={t('Type your answer here...', 'अपना उत्तर यहाँ टाइप करें...')}
+                        value={textAnswer}
+                        onChange={(e) => setTextAnswer(e.target.value)}
+                        autoFocus
+                      />
+                      <button type="submit" className="w-full md:w-auto self-end px-12 h-20 bg-accent text-paper font-bold text-2xl rounded-2xl shadow-raised flex items-center justify-center gap-3 hover:scale-105 transition-transform">
+                        {t('Submit Answer', 'उत्तर जमा करें')} &rarr;
                       </button>
-                      <button className="btn btn-primary" onClick={handleAcceptVoice} style={{ height: '36px' }}>
-                        {t('Accept & Continue →', 'स्वीकार करें →')}
-                      </button>
-                    </div>
+                    </form>
                   </div>
                 )}
-              </div>
-            )}
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        </main>
 
-            {inputMode === 'TEXT' && (
-              <form onSubmit={handleTextSubmit} style={{ backgroundColor: 'rgba(13,18,25,0.9)', borderRadius: '16px', padding: '20px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 700, margin: '0 0 8px 0' }}>
-                  {language === 'hi' ? currentQuestion.text.hi : currentQuestion.text.en}
-                </h2>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder={t('Type your answer here…', 'यहाँ अपना उत्तर लिखें…')}
-                  value={textAnswer}
-                  onChange={(e) => setTextAnswer(e.target.value)}
-                  style={{ marginBottom: '12px' }}
-                  autoFocus
-                />
-                <button type="submit" className="btn btn-primary" style={{ width: '100%', height: '42px' }}>
-                  {t('Submit Answer →', 'उत्तर भेजें →')}
+        <aside className="w-full md:w-[320px] lg:w-[400px] bg-paper-sunken border-t md:border-t-0 md:border-l border-rule flex flex-col shrink-0">
+          <div className="p-6 md:p-8 flex flex-col h-full gap-8">
+            
+            <div>
+              <h3 className="font-mono text-xs font-bold text-ink-tertiary uppercase tracking-widest mb-4">
+                {t('Interaction Mode', 'इंटरैक्शन मोड')}
+              </h3>
+              <div className="flex flex-col gap-3">
+                <button
+                  className={`flex items-center gap-4 px-6 h-16 rounded-2xl border transition-all ${inputMode === 'TOUCH' ? 'bg-paper border-accent shadow-raised text-accent' : 'bg-transparent border-transparent hover:bg-paper-raised text-ink-secondary hover:text-ink-primary'}`}
+                  onClick={() => { setInputMode('TOUCH'); setAudioStatus('IDLE'); }}
+                >
+                  <span className="text-2xl">&#128434;</span> 
+                  <span className="font-bold text-lg">{t('Touch', 'स्पर्श')}</span>
                 </button>
-              </form>
-            )}
-          </div>
-        )}
+                <button
+                  className={`flex items-center gap-4 px-6 h-16 rounded-2xl border transition-all ${inputMode === 'VOICE' ? 'bg-paper border-accent shadow-raised text-accent' : 'bg-transparent border-transparent hover:bg-paper-raised text-ink-secondary hover:text-ink-primary'}`}
+                  onClick={() => setInputMode('VOICE')}
+                >
+                  <span className="text-2xl">&#127897;</span> 
+                  <span className="font-bold text-lg">{t('Voice', 'आवाज़')}</span>
+                </button>
+                <button
+                  className={`flex items-center gap-4 px-6 h-16 rounded-2xl border transition-all ${inputMode === 'TEXT' ? 'bg-paper border-accent shadow-raised text-accent' : 'bg-transparent border-transparent hover:bg-paper-raised text-ink-secondary hover:text-ink-primary'}`}
+                  onClick={() => { setInputMode('TEXT'); setAudioStatus('IDLE'); }}
+                >
+                  <span className="text-2xl">&#9000;</span> 
+                  <span className="font-bold text-lg">{t('Type', 'टाइप')}</span>
+                </button>
+              </div>
+            </div>
 
-        {/* Back Link */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-          <button
-            onClick={() => router.push('/consent')}
-            style={{ fontSize: '12px', color: 'rgba(240, 244, 248, 0.4)', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            ← {t('Back to Consent', 'सहमति पत्र पर वापस जाएं')}
-          </button>
-        </div>
-      </main>
+            <div className="mt-auto">
+              <h3 className="font-mono text-xs font-bold text-ink-tertiary uppercase tracking-widest mb-4">
+                {t('Language', 'भाषा')}
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setLanguage('en')}
+                  className={`flex-1 h-12 rounded-xl font-bold transition-all border ${language === 'en' ? 'bg-paper border-ink-primary text-ink-primary shadow-sm' : 'bg-transparent border-rule text-ink-secondary hover:border-ink-muted'}`}
+                >
+                  English
+                </button>
+                <button
+                  onClick={() => setLanguage('hi')}
+                  className={`flex-1 h-12 rounded-xl font-bold transition-all border ${language === 'hi' ? 'bg-paper border-ink-primary text-ink-primary shadow-sm' : 'bg-transparent border-rule text-ink-secondary hover:border-ink-muted'}`}
+                >
+                  हिंदी
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-rule mt-2">
+              <button
+                onClick={() => router.push('/consent')}
+                className="font-sans text-sm font-semibold text-ink-muted hover:text-ink-primary transition-colors flex items-center gap-2"
+              >
+                &larr; {t('Back to Consent', 'सहमति पर वापस जाएं')}
+              </button>
+            </div>
+
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

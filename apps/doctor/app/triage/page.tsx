@@ -79,7 +79,7 @@ const RISK_CONFIG: Record<RiskLevel, { label: string; borderClass: string; bgCla
   EMERGENCY:     { label: '🚨 Emergency',    borderClass: 'border-signal-critical', bgClass: 'bg-signal-critical/10', pulse: true  },
   HIGH_PRIORITY: { label: '⚠️ High Priority', borderClass: 'border-signal-warning',  bgClass: 'bg-signal-warning/10',  pulse: true  },
   WARNING:       { label: '⚡ Warning',       borderClass: 'border-signal-warning/50', bgClass: 'bg-signal-warning/5', pulse: false },
-  NORMAL:        { label: '✅ Normal',        borderClass: 'border-dark-rule', bgClass: 'bg-dark-raised', pulse: false },
+  NORMAL:        { label: '✅ Normal',        borderClass: 'border-rule', bgClass: 'bg-paper', pulse: false },
 };
 
 function timeAgo(isoString: string): string {
@@ -152,7 +152,7 @@ export default function DoctorTriagePage() {
       }
     } catch {
       // Keep seed alerts fallback
-    } fontally {
+    } finally {
       setLoading(false);
     }
   }, []);
@@ -195,28 +195,28 @@ export default function DoctorTriagePage() {
 
   if (!authChecked) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-dark text-ink-primary">
+      <div className="flex items-center justify-center min-h-screen bg-paper text-ink-primary">
         <p>Authenticating…</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-dark">
+    <div className="flex h-screen w-full overflow-hidden bg-transparent">
       {/* Sidebar */}
-      <aside className="w-64 flex flex-col border-r border-dark-rule bg-dark-raised flex-shrink-0" role="navigation" aria-label="Doctor portal navigation">
-        <div className="flex items-center gap-3 p-5 border-b border-dark-rule">
+      <aside className="w-64 flex flex-col border-r border-rule bg-paper flex-shrink-0" role="navigation" aria-label="Doctor portal navigation">
+        <div className="flex items-center gap-3 p-5 border-b border-rule">
           <div className="text-accent" aria-hidden="true">
             <MediKioskLogo />
           </div>
           <div>
-            <div className="font-semibold text-ink-primary tracking-tight text-lg">MediKiosk</div>
-            <div className="text-xs text-ink-tertiary">Doctor Portal</div>
+            <div className="font-semibold text-ink-onDark tracking-tight text-lg">MediKiosk</div>
+            <div className="text-xs text-ink-onDarkMuted">Doctor Portal</div>
           </div>
         </div>
 
         <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1">
-          <div className="text-xs font-semibold uppercase tracking-wider text-ink-muted mt-5 mb-2 px-3">OPD</div>
+          <div className="text-[12px] font-semibold uppercase tracking-wide text-ink-onDarkMuted mt-5 mb-2 px-3">OPD</div>
           <Link href="/" passHref legacyBehavior>
             <NavItem>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -233,7 +233,7 @@ export default function DoctorTriagePage() {
               </svg>
               Real-time Triage
               {activeAlerts.length > 0 && (
-                <span className="ml-auto bg-signal-critical/10 border border-signal-critical/30 rounded-full text-[11px] font-bold px-2 py-0.5 text-signal-critical">
+                <span className="ml-auto bg-signal-critical/10 border border-signal-critical/30 rounded-md text-[11px] font-bold px-2 py-0.5 text-signal-critical">
                   {activeAlerts.length}
                 </span>
               )}
@@ -249,7 +249,7 @@ export default function DoctorTriagePage() {
             </NavItem>
           </Link>
 
-          <div className="text-xs font-semibold uppercase tracking-wider text-ink-muted mt-5 mb-2 px-3">Portals</div>
+          <div className="text-[12px] font-semibold uppercase tracking-wide text-ink-onDarkMuted mt-5 mb-2 px-3">Portals</div>
           <NavItem href="http://localhost:3000" target="_blank" rel="noopener noreferrer">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
@@ -265,13 +265,13 @@ export default function DoctorTriagePage() {
           </NavItem>
         </nav>
 
-        <div className="p-4 border-t border-dark-rule flex flex-col gap-3">
+        <div className="p-4 border-t border-rule flex flex-col gap-3">
           {user && (
-            <div className="flex items-center gap-3 p-3 bg-dark-sunken rounded-lg border border-dark-rule">
+            <div className="flex items-center gap-3 p-3 bg-paper-sunken rounded-lg border border-rule">
               <div className="w-9 h-9 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-sm border border-accent/20" aria-hidden="true">{initials}</div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold truncate text-ink-primary">{user.fullName}</div>
-                <div className="text-xs text-ink-tertiary truncate uppercase tracking-wider font-medium">{user.role}</div>
+                <div className="text-sm font-semibold truncate text-ink-onDark">{user.fullName}</div>
+                <div className="text-xs text-ink-onDarkMuted truncate uppercase tracking-wider font-medium">{user.role}</div>
               </div>
             </div>
           )}
@@ -282,11 +282,11 @@ export default function DoctorTriagePage() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 flex flex-col overflow-hidden bg-dark">
-        <div className="flex items-center justify-between p-6 border-b border-dark-rule bg-dark-raised flex-shrink-0">
+      <main className="flex-1 flex flex-col overflow-hidden bg-transparent">
+        <div className="flex items-center justify-between p-6 border-b border-rule bg-dark text-ink-onDark flex-shrink-0">
           <div>
-            <h1 className="text-2xl font-semibold text-ink-primary tracking-tight">Real-Time Clinical Triage Signals</h1>
-            <p className="text-sm text-ink-secondary mt-1">AST Rule Engine signals & red flags detected during live patient kiosk intakes.</p>
+            <h1 className="text-2xl font-serif font-semibold text-ink-onDark tracking-tight">Real-Time Clinical Triage Signals</h1>
+            <p className="text-sm text-ink-onDarkMuted mt-1">AST Rule Engine signals & red flags detected during live patient kiosk intakes.</p>
           </div>
           <div className="flex items-center gap-5">
             <span className="text-xs text-accent flex items-center gap-1.5 font-semibold">
@@ -306,7 +306,7 @@ export default function DoctorTriagePage() {
               {/* Active Alerts */}
               {activeAlerts.length > 0 && (
                 <div className="mb-6">
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-ink-tertiary mb-3">
+                  <h2 className="text-[12px] font-bold uppercase tracking-wide text-ink-secondary mb-3">
                     Active Priority Signals ({activeAlerts.length})
                   </h2>
                   <div className="flex flex-col gap-3">
@@ -324,15 +324,15 @@ export default function DoctorTriagePage() {
                                   {risk.label}
                                 </SeverityBadge>
                                 {alert.clinicalCategory && (
-                                  <span className="text-[11px] uppercase px-2 py-0.5 bg-dark-sunken rounded-full text-ink-secondary font-semibold border border-dark-rule">
+                                  <span className="text-[11px] uppercase px-2 py-0.5 bg-paper-sunken rounded-md text-ink-secondary font-semibold border border-rule">
                                     {alert.clinicalCategory}
                                   </span>
                                 )}
-                                <span className="text-[11px] text-signal-warning font-bold">
+                                <span className="text-[11px] text-signal-warning font-bold font-mono rounded-md px-1">
                                   SCORE: {alert.priorityScore}
                                 </span>
                               </div>
-                              <span className="text-xs text-ink-muted">
+                              <span className="text-xs text-ink-onDarkMuted">
                                 {timeAgo(alert.createdAt)}
                               </span>
                             </div>
@@ -340,7 +340,7 @@ export default function DoctorTriagePage() {
                             <p className="text-sm font-semibold text-ink-primary mb-1.5">
                               {alert.suggestedAction || 'Priority signal flagged during intake'}
                             </p>
-                            <DataMono className="text-xs text-ink-tertiary">
+                            <DataMono className="text-xs text-ink-secondary">
                               SESSION: {alert.sessionId} {alert.patient ? `· ${alert.patient.firstName} ${alert.patient.lastName} (${alert.patient.age}y ${alert.patient.gender})` : ''}
                             </DataMono>
                           </div>
@@ -371,14 +371,14 @@ export default function DoctorTriagePage() {
               {/* Handled / History Alerts */}
               {otherAlerts.length > 0 && (
                 <div>
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-ink-tertiary mb-3">
+                  <h2 className="text-[12px] font-bold uppercase tracking-wide text-ink-secondary mb-3">
                     Acknowledged & Escalated Signals ({otherAlerts.length})
                   </h2>
                   <div className="flex flex-col gap-2.5">
                     {otherAlerts.map((alert) => (
                       <Card
                         key={alert.id}
-                        className="flex justify-between items-center px-4 py-3 opacity-80 bg-dark-raised border-dark-rule shadow-card"
+                        className="flex justify-between items-center px-4 py-3 opacity-80 bg-paper border-rule shadow-card"
                       >
                         <div>
                           <div className="flex gap-2 items-center mb-1">
@@ -387,7 +387,7 @@ export default function DoctorTriagePage() {
                             </span>
                             <span className="text-sm font-semibold text-ink-primary">{alert.suggestedAction}</span>
                           </div>
-                          <div className="text-[11px] text-ink-tertiary">
+                          <div className="text-[11px] text-ink-secondary">
                             {alert.clinicalCategory} · {timeAgo(alert.createdAt)}
                           </div>
                         </div>

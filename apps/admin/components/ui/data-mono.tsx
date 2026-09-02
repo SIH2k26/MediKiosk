@@ -7,3 +7,4 @@ function DataMono({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>
   )
 }
 export { DataMono }
+
